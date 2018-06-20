@@ -47,7 +47,8 @@ export interface IParsedRepresentation {
 export type IParsedAdaptationType = "audio" |
                                     "video" |
                                     "text" |
-                                    "image";
+                                    "image" |
+                                    "overlay";
 
 // Collection of multiple `Adaptation`, regrouped by type
 export type IParsedAdaptations =

@@ -42,6 +42,7 @@ import BufferOrchestrator, {
 } from "../buffers";
 import { SegmentPipelineCreator } from "../pipelines";
 import SourceBuffersStore, {
+  IOverlaySourceBufferOptions,
   ITextTrackSourceBufferOptions,
 } from "../source_buffers";
 import createBufferClock from "./create_buffer_clock";
@@ -68,7 +69,8 @@ export interface IMediaSourceLoaderArguments {
     wantedBufferAhead$ : BehaviorSubject<number>; // buffer "goal"
     maxBufferAhead$ : Observable<number>; // To GC after the current position
     maxBufferBehind$ : Observable<number>; // to GC before the current position
-    textTrackOptions : ITextTrackSourceBufferOptions; // TextTrack configuration
+    textTrackOptions? : ITextTrackSourceBufferOptions; // TextTrack configuration
+    overlayOptions? : IOverlaySourceBufferOptions; // Overlay configuration
 
     // strategy when switching the current bitrate manually
     manualBitrateSwitchingMode : "seamless"|"direct";

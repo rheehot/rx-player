@@ -58,7 +58,10 @@ import {
   IFetchManifestResult,
   SegmentPipelineCreator,
 } from "../pipelines";
-import { ITextTrackSourceBufferOptions } from "../source_buffers";
+import {
+  IOverlaySourceBufferOptions,
+  ITextTrackSourceBufferOptions,
+} from "../source_buffers";
 import createEMEManager, {
   IEMEDisabledEvent,
 } from "./create_eme_manager";
@@ -109,7 +112,10 @@ export interface IInitializeArguments {
   pipelines : ITransportPipelines; // Transport (e.g. DASH, Smooth...) pipelines
   speed$ : Observable<number>; // Emit the wanted playback rate
   startAt? : IInitialTimeOptions; // The wanted starting position
-  textTrackOptions : ITextTrackSourceBufferOptions; // TextTrack configuration
+  sourceBufferOptions?: {
+    text?: ITextTrackSourceBufferOptions; // TextTrack configuration
+    overlay?: IOverlaySourceBufferOptions; // Overlay configuration
+  };
   url? : string; // URL of the Manifest
 }
 
@@ -150,7 +156,7 @@ export default function InitializeOnMediaSource(
     pipelines,
     speed$,
     startAt,
-    textTrackOptions,
+    sourceBufferOptions,
     url } : IInitializeArguments
 ) : Observable<IInitEvent> {
   const { offlineRetry, segmentRetry, manifestRetry } = networkConfig;
@@ -213,7 +219,12 @@ export default function InitializeOnMediaSource(
 
     const mediaSourceLoader = createMediaSourceLoader({
       abrManager,
-      bufferOptions: objectAssign({ textTrackOptions }, bufferOptions),
+      bufferOptions: objectAssign({
+        textTrackOptions: sourceBufferOptions !== undefined ? sourceBufferOptions.text :
+                                                              undefined,
+        overlayOptions: sourceBufferOptions !== undefined ? sourceBufferOptions.overlay :
+                                                            undefined,
+      }, bufferOptions),
       clock$,
       manifest,
       mediaElement,

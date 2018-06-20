@@ -23,6 +23,7 @@ import QueuedSourceBuffer, {
 } from "./queued_source_buffer";
 import SourceBuffersStore, {
   getBufferTypes,
+  IOverlaySourceBufferOptions,
   ISourceBufferOptions,
   ITextTrackSourceBufferOptions,
 } from "./source_buffers_store";
@@ -33,6 +34,7 @@ export {
   IBufferType,
   IBufferedChunk,
   IPushChunkInfos,
+  IOverlaySourceBufferOptions,
   IPushedChunkData,
   ISourceBufferOptions,
   ITextTrackSourceBufferOptions,

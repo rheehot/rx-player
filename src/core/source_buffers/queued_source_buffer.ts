@@ -51,7 +51,8 @@ const { APPEND_WINDOW_SECURITIES,
 export type IBufferType = "audio" |
                           "video" |
                           "text" |
-                          "image";
+                          "image" |
+                          "overlay";
 
 enum SourceBufferAction { Push,
                           Remove,
