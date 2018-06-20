@@ -302,6 +302,7 @@ export type IAudioVideoParserObservable = Observable<IAudioVideoParserResponse>;
 export interface IMetaplaylistOverlayData {
   start : number;
   end : number;
+  timescale : number;
   version : number;
   elements : Array<{
     url : string;
