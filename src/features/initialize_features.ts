@@ -49,6 +49,9 @@ export default function initializeFeaturesObject() : void {
   if (__FEATURES__.DASH) {
     features.transports.dash = require(__RELATIVE_PATH__.DASH).default;
   }
+  if (__FEATURES__.HLS) {
+    features.transports.hls = require(__RELATIVE_PATH__.HLS).default;
+  }
   if (__FEATURES__.LOCAL_MANIFEST) {
     features.transports.local = require(__RELATIVE_PATH__.LOCAL_MANIFEST).default;
   }

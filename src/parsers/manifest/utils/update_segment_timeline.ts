@@ -31,9 +31,8 @@ export default function updateSegmentTimeline(
   oldTimeline : IIndexSegment[],
   newTimeline : IIndexSegment[]
 ) : void {
-  const prevTimelineLength = oldTimeline.length;
   if (oldTimeline.length === 0) {
-    oldTimeline.splice(0, prevTimelineLength, ...newTimeline);
+    oldTimeline.splice(0, 0, ...newTimeline);
     return;
   }
   if (newTimeline.length === 0) {
@@ -42,6 +41,7 @@ export default function updateSegmentTimeline(
 
   const newIndexStart = newTimeline[0].start;
 
+  const prevTimelineLength = oldTimeline.length;
   const oldLastElt = oldTimeline[prevTimelineLength - 1];
   const oldIndexEnd = getIndexSegmentEnd(oldLastElt, newTimeline[0]);
   if (oldIndexEnd < newIndexStart) {

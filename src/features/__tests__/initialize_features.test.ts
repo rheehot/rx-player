@@ -42,6 +42,7 @@ describe("Features - initializeFeaturesObject", () => {
       BIF_PARSER: "../parsers/images/bif.ts",
       SMOOTH: "../transports/smooth/index.ts",
       DASH: "../transports/dash/index.ts",
+      HLS: "../transports/hls/index.ts",
       LOCAL_MANIFEST: "../transports/local/index.ts",
       METAPLAYLIST: "../transports/metaplaylist/index.ts",
       NATIVE_TEXT_BUFFER: "../custom_source_buffers/text/native/index.ts",
@@ -78,6 +79,7 @@ describe("Features - initializeFeaturesObject", () => {
       transports: {
         metaplaylist: require("../../transports/metaplaylist/index").default,
         dash: require("../../transports/dash/index").default,
+        hls: require("../../transports/hls/index").default,
         smooth: require("../../transports/smooth/index").default,
         local: require("../../transports/local/index").default,
       },

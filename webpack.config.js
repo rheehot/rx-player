@@ -26,6 +26,10 @@ const plugins = [
         process.env.RXP_DASH === "true" :
         process.env.RXP_DASH !== "false",
 
+      HLS: isBarebone ?
+        process.env.RXP_HLS === "true" :
+        process.env.RXP_HLS !== "false",
+
       LOCAL_MANIFEST: process.env.RXP_LOCAL_MANIFEST === "true",
 
       METAPLAYLIST: process.env.RXP_METAPLAYLIST === "true",
@@ -82,6 +86,7 @@ const plugins = [
       BIF_PARSER: JSON.stringify("../parsers/images/bif.ts"),
       SMOOTH: JSON.stringify("../transports/smooth/index.ts"),
       DASH: JSON.stringify("../transports/dash/index.ts"),
+      HLS: JSON.stringify("../transports/hls/index.ts"),
       LOCAL_MANIFEST: JSON.stringify("../transports/local/index.ts"),
       METAPLAYLIST: JSON.stringify("../transports/metaplaylist/index.ts"),
       NATIVE_TEXT_BUFFER: JSON.stringify("../custom_source_buffers/text/native/index.ts"),

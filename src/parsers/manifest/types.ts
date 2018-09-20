@@ -40,7 +40,6 @@ export interface IParsedRepresentation {
   frameRate?: string;
   height?: number;
   mimeType?: string;
-  url? : string;
   width?: number;
 }
 

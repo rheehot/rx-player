@@ -24,6 +24,7 @@ declare const __FEATURES__ : {
   DASH : boolean;
   DIRECTFILE : boolean;
   EME : boolean;
+  HLS : boolean;
   HTML_SAMI : boolean;
   HTML_SRT : boolean;
   HTML_TTML : boolean;
@@ -41,6 +42,7 @@ declare const __RELATIVE_PATH__ : {
   DASH: string;
   DIRECTFILE: string;
   EME_MANAGER: string;
+  HLS : string;
   HTML_SAMI: string;
   HTML_SRT: string;
   HTML_TEXT_BUFFER: string;
