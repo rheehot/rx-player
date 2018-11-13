@@ -17,7 +17,7 @@
 import { ICustomError } from "../../errors";
 import Manifest, {
   Adaptation,
-  Period,
+  IFetchedPeriod,
   Representation,
 } from "../../manifest";
 import {
@@ -41,7 +41,7 @@ export interface ISmoothInitSegmentPrivateInfos { codecPrivateData? : string;
                                                   }; }
 
 export interface IBaseContentInfos { manifest: Manifest;
-                                     period: Period;
+                                     period: IFetchedPeriod;
                                      adaptation: Adaptation;
                                      representation: Representation; }
 

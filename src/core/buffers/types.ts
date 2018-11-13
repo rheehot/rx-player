@@ -18,8 +18,8 @@ import { Subject } from "rxjs";
 import { ICustomError } from "../../errors";
 import {
   Adaptation,
+  IFetchedPeriod,
   ISegment,
-  Period,
   Representation,
 } from "../../manifest";
 import { IBufferType } from "../source_buffers";
@@ -27,7 +27,7 @@ import { IBufferType } from "../source_buffers";
 // Emitted after a new segment has been added to the SourceBuffer
 export interface IBufferEventAddedSegment<T> {
   type : "added-segment";
-  value : { content: { period : Period;
+  value : { content: { period : IFetchedPeriod;
                        adaptation : Adaptation;
                        representation : Representation; };
             segment : ISegment; // The concerned Segment
@@ -105,10 +105,11 @@ export interface IBitrateEstimationChangeEvent {
 // Emitted when the current Representation considered changes
 export interface IRepresentationChangeEvent {
   type : "representationChange";
-  value : { type : IBufferType;
-            period : Period;
-            representation : Representation |
-                             null; };
+  value : {
+    type : IBufferType;
+    period : IFetchedPeriod;
+    representation : Representation|null;
+  };
 }
 
 // Every events sent by the AdaptationBuffer
@@ -121,18 +122,19 @@ export type IAdaptationBufferEvent<T> = IRepresentationBufferEvent<T> |
 // The currently-downloaded Adaptation changed.
 export interface IAdaptationChangeEvent { type : "adaptationChange";
                                           value : { type : IBufferType;
-                                                    period : Period;
+                                                    period : IFetchedPeriod;
                                                     adaptation : Adaptation |
                                                                  null; }; }
+
 // Currently-playing Period changed.
 export interface IActivePeriodChangedEvent { type: "activePeriodChanged";
-                                             value : { period: Period }; }
+                                             value : { period: IFetchedPeriod }; }
 
 // a new PeriodBuffer is ready, waiting for an adaptation/track choice.
 export interface IPeriodBufferReadyEvent {
   type : "periodBufferReady";
   value : { type : IBufferType;
-            period : Period;
+            period : IFetchedPeriod;
             adaptation$ : Subject<Adaptation|null>; };
 }
 
@@ -140,7 +142,7 @@ export interface IPeriodBufferReadyEvent {
 // cleaning-up resources.
 export interface IPeriodBufferClearedEvent { type : "periodBufferCleared";
                                              value : { type : IBufferType;
-                                                       period : Period; }; }
+                                                       period : IFetchedPeriod; }; }
 
 // The last PeriodBuffers from every type are full.
 export interface IEndOfStreamEvent { type: "end-of-stream";

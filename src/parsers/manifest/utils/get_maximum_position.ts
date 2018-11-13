@@ -27,6 +27,10 @@ export default function getMaximumPosition(
 ) : number | undefined {
   for (let i = manifest.periods.length - 1; i >= 0; i--) {
     const periodAdaptations = manifest.periods[i].adaptations;
+    if (periodAdaptations === undefined) {
+      // XXX TODO?
+      throw new Error();
+    }
     const firstAudioAdaptationFromPeriod = periodAdaptations.audio === undefined ?
       undefined :
       periodAdaptations.audio[0];

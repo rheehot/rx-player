@@ -28,8 +28,8 @@ import {
 import { ICustomError } from "../../../errors";
 import Manifest, {
   Adaptation,
+  IFetchedPeriod,
   ISegment,
-  Period,
   Representation,
 } from "../../../manifest";
 import {
@@ -106,7 +106,7 @@ export type ISegmentPipelineLoader<T> =
 
 export interface IContent {
   manifest : Manifest;
-  period : Period;
+  period : IFetchedPeriod;
   adaptation : Adaptation;
   representation : Representation;
   segment : ISegment;

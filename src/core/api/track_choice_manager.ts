@@ -26,7 +26,7 @@ import {
 import log from "../../log";
 import {
   Adaptation,
-  Period,
+  IFetchedPeriod,
   Representation,
 } from "../../manifest";
 import arrayFind from "../../utils/array_find";
@@ -94,7 +94,7 @@ interface ITMPeriodVideoInfos { adaptations : Adaptation[];
                                 adaptation$ : Subject<Adaptation|null>; }
 
 // stored information for a single period
-interface ITMPeriodInfos { period : Period;
+interface ITMPeriodInfos { period : IFetchedPeriod;
                            audio? : ITMPeriodAudioInfos;
                            text? : ITMPeriodTextInfos;
                            video? : ITMPeriodVideoInfos; }
@@ -144,13 +144,13 @@ export default class TrackChoiceManager {
   private _preferredTextTracks : BehaviorSubject<ITextTrackPreference[]>;
 
   // Memoization of the previously-chosen audio Adaptation for each Period.
-  private _audioChoiceMemory : WeakMap<Period, Adaptation|null>;
+  private _audioChoiceMemory : WeakMap<IFetchedPeriod, Adaptation|null>;
 
   // Memoization of the previously-chosen text Adaptation for each Period.
-  private _textChoiceMemory : WeakMap<Period, Adaptation|null>;
+  private _textChoiceMemory : WeakMap<IFetchedPeriod, Adaptation|null>;
 
   // Memoization of the previously-chosen video Adaptation for each Period.
-  private _videoChoiceMemory : WeakMap<Period, Adaptation|null>;
+  private _videoChoiceMemory : WeakMap<IFetchedPeriod, Adaptation|null>;
 
   /**
    * @param {BehaviorSubject<Array.<Object|null>>} preferredAudioTracks - Array
@@ -182,7 +182,7 @@ export default class TrackChoiceManager {
    */
   public addPeriod(
     bufferType : "audio" | "text"| "video",
-    period : Period,
+    period : IFetchedPeriod,
     adaptation$ : Subject<Adaptation|null>
   ) : void {
     const periodItem = getPeriodItem(this._periods, period);
@@ -211,7 +211,7 @@ export default class TrackChoiceManager {
    */
   public removePeriod(
     bufferType : "audio" | "text" | "video",
-    period : Period
+    period : IFetchedPeriod
   ) : void {
     const periodIndex = findPeriodIndex(this._periods, period);
     if (periodIndex == null) {
@@ -256,7 +256,7 @@ export default class TrackChoiceManager {
    *   - the last choice for this period, if one
    * @param {Period} period - The concerned Period.
    */
-  public setInitialAudioTrack(period : Period) : void {
+  public setInitialAudioTrack(period : IFetchedPeriod) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const audioInfos = periodItem != null ? periodItem.audio :
                                             null;
@@ -294,7 +294,7 @@ export default class TrackChoiceManager {
    *   - the last choice for this period, if one
    * @param {Period} period - The concerned Period.
    */
-  public setInitialTextTrack(period : Period) : void {
+  public setInitialTextTrack(period : IFetchedPeriod) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const textInfos = periodItem != null ? periodItem.text :
                                            null;
@@ -330,7 +330,7 @@ export default class TrackChoiceManager {
    *   - the last choice for this period, if one
    * @param {Period} period - The concerned Period.
    */
-  public setInitialVideoTrack(period : Period) : void {
+  public setInitialVideoTrack(period : IFetchedPeriod) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const videoInfos = periodItem != null ? periodItem.video :
                                             null;
@@ -362,7 +362,7 @@ export default class TrackChoiceManager {
    * @param {Period} period - The concerned Period.
    * @param {string} wantedId - adaptation id of the wanted track
    */
-  public setAudioTrackByID(period : Period, wantedId : string) : void {
+  public setAudioTrackByID(period : IFetchedPeriod, wantedId : string) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const audioInfos = periodItem != null ? periodItem.audio :
                                             null;
@@ -390,7 +390,7 @@ export default class TrackChoiceManager {
    * @param {Period} period - The concerned Period.
    * @param {string} wantedId - adaptation id of the wanted track
    */
-  public setTextTrackByID(period : Period, wantedId : string) : void {
+  public setTextTrackByID(period : IFetchedPeriod, wantedId : string) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const textInfos = periodItem != null ? periodItem.text :
                                            null;
@@ -421,7 +421,7 @@ export default class TrackChoiceManager {
    * @throws Error - Throws if the given id is not found in any video adaptation
    * of the given Period.
    */
-  public setVideoTrackByID(period : Period, wantedId : string) : void {
+  public setVideoTrackByID(period : IFetchedPeriod, wantedId : string) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const videoInfos = periodItem != null ? periodItem.video :
                                             null;
@@ -451,7 +451,7 @@ export default class TrackChoiceManager {
    *
    * @throws Error - Throws if the period given has not been added
    */
-  public disableTextTrack(period : Period) : void {
+  public disableTextTrack(period : IFetchedPeriod) : void {
     const periodItem = getPeriodItem(this._periods, period);
     const textInfos = periodItem != null ? periodItem.text :
                                            null;
@@ -477,7 +477,7 @@ export default class TrackChoiceManager {
    * @param {Period} period - The concerned Period.
    * @returns {Object|null} - The audio track chosen for this Period
    */
-  public getChosenAudioTrack(period : Period) : ITMAudioTrack|null {
+  public getChosenAudioTrack(period : IFetchedPeriod) : ITMAudioTrack|null {
     const periodItem = getPeriodItem(this._periods, period);
     const audioInfos = periodItem != null ? periodItem.audio :
                                             null;
@@ -512,7 +512,7 @@ export default class TrackChoiceManager {
    * @param {Period} period - The concerned Period.
    * @returns {Object|null} - The text track chosen for this Period
    */
-  public getChosenTextTrack(period : Period) : ITMTextTrack|null {
+  public getChosenTextTrack(period : IFetchedPeriod) : ITMTextTrack|null {
     const periodItem = getPeriodItem(this._periods, period);
     const textInfos = periodItem != null ? periodItem.text :
                                            null;
@@ -543,7 +543,7 @@ export default class TrackChoiceManager {
    * @param {Period} period - The concerned Period.
    * @returns {Object|null} - The video track chosen for this Period
    */
-  public getChosenVideoTrack(period : Period) : ITMVideoTrack|null {
+  public getChosenVideoTrack(period : IFetchedPeriod) : ITMVideoTrack|null {
     const periodItem = getPeriodItem(this._periods, period);
     const videoInfos = periodItem != null ? periodItem.video :
                                             null;
@@ -566,7 +566,7 @@ export default class TrackChoiceManager {
    *
    * @returns {Array.<Object>}
    */
-  public getAvailableAudioTracks(period : Period) : ITMAudioTrackListItem[] {
+  public getAvailableAudioTracks(period : IFetchedPeriod) : ITMAudioTrackListItem[] {
     const periodItem = getPeriodItem(this._periods, period);
     const audioInfos = periodItem != null ? periodItem.audio :
                                            null;
@@ -601,7 +601,7 @@ export default class TrackChoiceManager {
    * @param {Period} period
    * @returns {Array.<Object>}
    */
-  public getAvailableTextTracks(period : Period) : ITMTextTrackListItem[] {
+  public getAvailableTextTracks(period : IFetchedPeriod) : ITMTextTrackListItem[] {
     const periodItem = getPeriodItem(this._periods, period);
     const textInfos = periodItem != null ? periodItem.text :
                                            null;
@@ -630,7 +630,7 @@ export default class TrackChoiceManager {
    *
    * @returns {Array.<Object>}
    */
-  public getAvailableVideoTracks(period : Period) : ITMVideoTrackListItem[] {
+  public getAvailableVideoTracks(period : IFetchedPeriod) : ITMVideoTrackListItem[] {
     const periodItem = getPeriodItem(this._periods, period);
     const videoInfos = periodItem != null ? periodItem.video :
                                             null;
@@ -876,7 +876,7 @@ function findFirstOptimalTextAdaptation(
 
 function findPeriodIndex(
   periods : SortedList<ITMPeriodInfos>,
-  period : Period
+  period : IFetchedPeriod
 ) : number|undefined {
   for (let i = 0; i < periods.length(); i++) {
     const periodI = periods.get(i);
@@ -888,7 +888,7 @@ function findPeriodIndex(
 
 function getPeriodItem(
   periods : SortedList<ITMPeriodInfos>,
-  period : Period
+  period : IFetchedPeriod
 ) : ITMPeriodInfos|undefined {
   for (let i = 0; i < periods.length(); i++) {
     const periodI = periods.get(i);

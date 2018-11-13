@@ -17,7 +17,7 @@
 import { ICustomError } from "../../errors";
 import Manifest, {
   Adaptation,
-  Period,
+  IFetchedPeriod,
   Representation,
 } from "../../manifest";
 import { IRepresentationChangeEvent } from "../buffers";
@@ -58,7 +58,7 @@ export interface IManifestUpdateEvent { type: "manifestUpdate";
 export interface IDecipherabilityUpdateEvent {
   type: "decipherabilityUpdate";
   value: Array<{ manifest : Manifest;
-                 period : Period;
+                 period : IFetchedPeriod;
                  adaptation : Adaptation;
                  representation : Representation; }>; }
 

@@ -15,12 +15,14 @@
  */
 
 import Adaptation from "./adaptation";
-import Period from "./period";
+import Period, {
+  IFetchedPeriod,
+} from "./period";
 import Representation from "./representation";
 import { ISegment } from "./representation_index";
 
 interface IBufferedChunkInfos { adaptation : Adaptation;
-                                period : Period;
+                                period : Period | IFetchedPeriod;
                                 representation : Representation;
                                 segment : ISegment; }
 

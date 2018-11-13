@@ -27,6 +27,10 @@ export default function getMinimumPosition(
 ) : number | undefined {
   for (let i = 0; i <= manifest.periods.length - 1; i++) {
     const periodAdaptations = manifest.periods[i].adaptations;
+    if (periodAdaptations === undefined) {
+      // XXX TODO?
+      throw new Error();
+    }
     const firstAudioAdaptationFromPeriod = periodAdaptations.audio === undefined ?
       undefined :
       periodAdaptations.audio[0];

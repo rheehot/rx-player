@@ -57,7 +57,7 @@ import {
 import log from "../../../log";
 import Manifest, {
   Adaptation,
-  Period,
+  IFetchedPeriod,
   Representation,
 } from "../../../manifest";
 import concatMapLatest from "../../../utils/concat_map_latest";
@@ -94,7 +94,7 @@ export interface IAdaptationBufferArguments<T> {
   abrManager : ABRManager; // Estimate best Representation
   clock$ : Observable<IAdaptationBufferClockTick>; // Emit current playback conditions.
   content : { manifest : Manifest;
-              period : Period;
+              period : IFetchedPeriod;
               adaptation : Adaptation; }; // content to download
   options: { manualBitrateSwitchingMode : "seamless" | "direct" }; // Switch strategy
   queuedSourceBuffer : QueuedSourceBuffer<T>; // Interact with the SourceBuffer

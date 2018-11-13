@@ -41,6 +41,7 @@ import config from "../../config";
 import { MediaError } from "../../errors";
 import log from "../../log";
 import Manifest, {
+  IFetchedPeriod,
   Period,
 } from "../../manifest";
 import { fromEvent } from "../../utils/event_emitter";
@@ -170,7 +171,7 @@ export default function BufferOrchestrator(
 
   // Emits the activePeriodChanged events every time the active Period changes.
   const activePeriodChanged$ = ActivePeriodEmitter(buffersArray).pipe(
-    filter((period) : period is Period => period != null),
+    filter((period) : period is IFetchedPeriod => period != null),
     map(period => {
       log.info("Buffer: New active period", period);
       return EVENTS.activePeriodChanged(period);
@@ -203,7 +204,7 @@ export default function BufferOrchestrator(
     basePeriod : Period
   ) : Observable<IMultiplePeriodBuffersEvent> {
     // Each Period for which there is currently a Buffer, chronologically
-    const periodList = new SortedList<Period>((a, b) => a.start - b.start);
+    const periodList = new SortedList<IFetchedPeriod>((a, b) => a.start - b.start);
     const destroyBuffers$ = new Subject<void>();
 
     // When set to `true`, all the currently active PeriodBuffer will be destroyed
@@ -345,6 +346,12 @@ export default function BufferOrchestrator(
     destroy$ : Observable<void>
   ) : Observable<IMultiplePeriodBuffersEvent> {
     log.info("BO: Creating new Buffer for", bufferType, basePeriod);
+
+    // XXX TODO
+    if (!basePeriod.isFetched()) {
+      throw new MediaError("MEDIA_TIME_NOT_FOUND",
+                           "The first Period was not fetched");
+    }
 
     // Emits the Period of the next Period Buffer when it can be created.
     const createNextPeriodBuffer$ = new Subject<Period>();

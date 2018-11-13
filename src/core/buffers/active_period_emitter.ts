@@ -32,11 +32,11 @@ import {
   map,
   scan,
 } from "rxjs/operators";
-import { Period } from "../../manifest";
+import { IFetchedPeriod } from "../../manifest";
 import { IBufferType } from "../source_buffers";
 import { IMultiplePeriodBuffersEvent } from "./types";
 
-interface IPeriodObject { period : Period;
+interface IPeriodObject { period : IFetchedPeriod;
                           buffers: Set<IBufferType>; }
 
 type IPeriodsList = Partial<Record<string, IPeriodObject>>;
@@ -81,7 +81,7 @@ type IPeriodsList = Partial<Record<string, IPeriodObject>>;
  */
 export default function ActivePeriodEmitter(
   buffers$: Array<Observable<IMultiplePeriodBuffersEvent>>
-) : Observable<Period|null> {
+) : Observable<IFetchedPeriod|null> {
   const numberOfBuffers = buffers$.length;
   return observableMerge(...buffers$).pipe(
     // not needed to filter, this is an optim
@@ -126,9 +126,9 @@ export default function ActivePeriodEmitter(
       return acc;
     }, {}),
 
-    map((list) : Period | null => {
+    map((list) : IFetchedPeriod | null => {
       const activePeriodIDs = Object.keys(list);
-      const completePeriods : Period[] = [];
+      const completePeriods : IFetchedPeriod[] = [];
       for (let i = 0; i < activePeriodIDs.length; i++) {
         const periodInfos = list[activePeriodIDs[i]];
         if (periodInfos != null && periodInfos.buffers.size === numberOfBuffers) {
@@ -136,7 +136,7 @@ export default function ActivePeriodEmitter(
         }
       }
 
-      return completePeriods.reduce<Period|null>((acc, period) => {
+      return completePeriods.reduce<IFetchedPeriod|null>((acc, period) => {
         if (acc == null) {
           return period;
         }

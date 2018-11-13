@@ -27,9 +27,9 @@ import {
 import features from "../../features";
 import Manifest, {
   Adaptation,
+  IFetchedPeriod,
   IMetaPlaylistPrivateInfos,
   ISegment,
-  Period,
   Representation,
 } from "../../manifest";
 import parseMetaPlaylist, {
@@ -64,7 +64,7 @@ function getContent(
   segment : ISegment,
   offset : number
 ) : { manifest : Manifest;
-      period : Period;
+      period : IFetchedPeriod;
       adaptation : Adaptation;
       representation : Representation;
       segment : ISegment; }

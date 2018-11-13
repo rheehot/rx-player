@@ -18,8 +18,8 @@ import { Subject } from "rxjs";
 import { ICustomError } from "../../errors";
 import {
   Adaptation,
+  IFetchedPeriod,
   ISegment,
-  Period,
   Representation,
 } from "../../manifest";
 import { IBufferType } from "../source_buffers";
@@ -51,7 +51,7 @@ const EVENTS = {
              value: { bufferType } };
   },
 
-  activePeriodChanged(period : Period) : IActivePeriodChangedEvent {
+  activePeriodChanged(period : IFetchedPeriod) : IActivePeriodChangedEvent {
     return { type : "activePeriodChanged",
              value : { period } };
   },
@@ -59,7 +59,7 @@ const EVENTS = {
   adaptationChange(
     bufferType : IBufferType,
     adaptation : Adaptation|null,
-    period : Period
+    period : IFetchedPeriod
   ) : IAdaptationChangeEvent {
     return { type: "adaptationChange",
              value : { type: bufferType,
@@ -69,7 +69,7 @@ const EVENTS = {
 
   addedSegment<T>(
     content : { adaptation : Adaptation;
-                period : Period;
+                period : IFetchedPeriod;
                 representation : Representation; },
     segment : ISegment,
     buffered : TimeRanges,
@@ -143,7 +143,7 @@ const EVENTS = {
 
   periodBufferReady(
     type : IBufferType,
-    period : Period,
+    period : IFetchedPeriod,
     adaptation$ : Subject<Adaptation|null>
   ) : IPeriodBufferReadyEvent {
     return { type: "periodBufferReady",
@@ -152,7 +152,7 @@ const EVENTS = {
 
   periodBufferCleared(
     type : IBufferType,
-    period : Period
+    period : IFetchedPeriod
   ) : IPeriodBufferClearedEvent {
     return { type: "periodBufferCleared",
              value: { type, period } };
@@ -167,7 +167,7 @@ const EVENTS = {
 
   representationChange(
     type : IBufferType,
-    period : Period,
+    period : IFetchedPeriod,
     representation : Representation
   ) : IRepresentationChangeEvent {
     return { type: "representationChange",

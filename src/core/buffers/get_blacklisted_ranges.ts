@@ -17,7 +17,7 @@
 import log from "../../log";
 import {
   Adaptation,
-  Period,
+  IFetchedPeriod,
   Representation,
 } from "../../manifest";
 import { IRange } from "../../utils/ranges";
@@ -33,7 +33,7 @@ import { QueuedSourceBuffer } from "../source_buffers";
 export default function getBlacklistedRanges(
   queuedSourceBuffer : QueuedSourceBuffer<unknown>,
   contents : Array<{ adaptation : Adaptation;
-                     period : Period;
+                     period : IFetchedPeriod;
                      representation : Representation; }>
 ) : IRange[] {
   queuedSourceBuffer.synchronizeInventory();

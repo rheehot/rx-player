@@ -16,6 +16,8 @@
 
 import Manifest, {
   IAdaptationType,
+  IBaseContentInfos,
+  IFetchedPeriod,
   StaticRepresentationIndex,
   SUPPORTED_ADAPTATIONS_TYPE,
 } from "../../../manifest";
@@ -24,6 +26,7 @@ import {
   IParsedAdaptation,
   IParsedAdaptations,
   IParsedManifest,
+  IParsedPartialPeriod,
   IParsedPeriod,
 } from "../types";
 import MetaRepresentationIndex from "./representation_index";
@@ -44,18 +47,20 @@ export interface IMetaPlaylistTextTrack {
   codecs? : string;
 }
 
+export interface IMetaPlaylistContent {
+  url: string; // URL of the Manifest
+  startTime: number; // start timestamp in seconds
+  endTime: number; // end timestamp in seconds
+  transport: string; // "dash" | "smooth" | "metaplaylist"
+  textTracks?: IMetaPlaylistTextTrack[];
+}
+
 export interface IMetaPlaylist {
   type : "MPL"; // Obligatory token
   version : string; // MAJOR.MINOR
   dynamic? : boolean; // The MetaPlaylist could need to be updated
   pollInterval? : number; // Refresh interval in seconds
-  contents: Array<{ // Sub-Manifests
-    url: string; // URL of the Manifest
-    startTime: number; // start timestamp in seconds
-    endTime: number; // end timestamp in seconds
-    transport: string; // "dash" | "smooth" | "metaplaylist"
-    textTracks?: IMetaPlaylistTextTrack[];
-  }>;
+  contents: IMetaPlaylistContent[];
 }
 
 const generateManifestID = idGenerator();
@@ -136,7 +141,118 @@ export default function parseMetaPlaylist(
 }
 
 /**
- * From several parsed manifests, generate a single bigger manifest.
+ * Take a single fetched Period from an original manifest and convert it
+ * into a MetaPlaylist Period.
+ * @param {Object} originalContent
+ * @param {Object} content
+ * @param {number} contentOffset}
+ * @param {Function} generateAdaptationID
+ * @param {Function} generateRepresentationID
+ * @returns {Object}
+ */
+function convertOriginalPeriod(
+  { manifest, period } : { manifest : Manifest; period : IFetchedPeriod },
+  content : IMetaPlaylistContent,
+  contentOffset : number,
+  generateAdaptationID : () => string,
+  generateRepresentationID : () => string
+) : IParsedPeriod {
+  const currentPeriodAdaptations = period.adaptations;
+  const adaptations = SUPPORTED_ADAPTATIONS_TYPE
+    .reduce<IParsedAdaptations>((acc, type : IAdaptationType) => {
+      const currentAdaptations = currentPeriodAdaptations[type];
+      if (currentAdaptations == null) {
+        return acc;
+      }
+
+      const adaptationsForCurrentType : IParsedAdaptation[] = [];
+      for (let iAda = 0; iAda < currentAdaptations.length; iAda++) {
+        const currentAdaptation = currentAdaptations[iAda];
+
+        const representations : any[] = [];
+        for (let iRep = 0; iRep < currentAdaptation.representations.length; iRep++) {
+          const currentRepresentation = currentAdaptation.representations[iRep];
+
+          const contentInfos : IBaseContentInfos = {
+            manifest,
+            period,
+            adaptation: currentAdaptation,
+            representation: currentRepresentation,
+          };
+
+          const newIndex = new MetaRepresentationIndex(currentRepresentation.index,
+                                                       [contentOffset, content.endTime],
+                                                       content.transport,
+                                                       contentInfos);
+          representations.push({
+            bitrate: currentRepresentation.bitrate,
+            index: newIndex,
+            id: currentRepresentation.id,
+            height: currentRepresentation.height,
+            width: currentRepresentation.width,
+            mimeType: currentRepresentation.mimeType,
+            frameRate: currentRepresentation.frameRate,
+            codecs: currentRepresentation.codec,
+            contentProtections: currentRepresentation.contentProtections,
+          });
+        }
+        adaptationsForCurrentType.push({
+          id: currentAdaptation.id,
+          representations,
+          type: currentAdaptation.type,
+          audioDescription: currentAdaptation.isAudioDescription,
+          closedCaption: currentAdaptation.isClosedCaption,
+          isDub: currentAdaptation.isDub,
+          language: currentAdaptation.language,
+        });
+        acc[type] = adaptationsForCurrentType;
+      }
+      return acc;
+    }, {});
+
+  // TODO only first period?
+  const textTracks : IMetaPlaylistTextTrack[] = Array.isArray(content.textTracks) ?
+    content.textTracks :
+    [];
+  const newTextAdaptations : IParsedAdaptation[] = textTracks.map((track) => {
+    const adaptationID = "gen-text-ada-" + generateAdaptationID();
+    const representationID = "gen-text-rep-" + generateRepresentationID();
+    return {
+      id: adaptationID,
+      type: "text",
+      language: track.language,
+      closedCaption: track.closedCaption,
+      manuallyAdded: true,
+      representations: [
+        { bitrate: 0,
+          id: representationID,
+          mimeType: track.mimeType,
+          codecs: track.codecs,
+          index: new StaticRepresentationIndex({ media: track.url }),
+        },
+      ],
+    };
+  }, []);
+
+  if (newTextAdaptations.length > 0) {
+    if (adaptations.text == null) {
+      adaptations.text = newTextAdaptations;
+    } else {
+      adaptations.text.push(...newTextAdaptations);
+    }
+  }
+
+  const newPeriod : IParsedPeriod = {
+    id: formatId(manifest.id) + "_" + formatId(period.id),
+    adaptations,
+    duration: period.duration,
+    start: contentOffset + period.start,
+  };
+  return newPeriod;
+}
+
+/**
+ * From several parsed manifests, generate a single manifest.
  * Each content presents a start and end time, so that periods
  * boudaries could be adapted.
  * @param {Object} mplData
@@ -167,7 +283,7 @@ function createManifest(
   let firstStart: number|null = null;
   let lastEnd: number|null = null;
 
-  const periods : IParsedPeriod[] = [];
+  const periods : Array<IParsedPeriod | IParsedPartialPeriod> = [];
   for (let iMan = 0; iMan < contents.length; iMan++) {
     const content = contents[iMan];
     firstStart = firstStart !== null ? Math.min(firstStart, content.startTime) :
@@ -179,102 +295,27 @@ function createManifest(
       continue;
     }
     const contentOffset = content.startTime - currentManifest.periods[0].start;
-    const contentEnd = content.endTime;
 
-    const manifestPeriods = [];
+    const manifestPeriods : Array<IParsedPeriod | IParsedPartialPeriod> = [];
     for (let iPer = 0; iPer < currentManifest.periods.length; iPer++) {
       const currentPeriod = currentManifest.periods[iPer];
-      const adaptations = SUPPORTED_ADAPTATIONS_TYPE
-        .reduce<IParsedAdaptations>((acc, type : IAdaptationType) => {
-          const currentAdaptations = currentPeriod.adaptations[type];
-          if (currentAdaptations == null) {
-            return acc;
-          }
-
-          const adaptationsForCurrentType : IParsedAdaptation[] = [];
-          for (let iAda = 0; iAda < currentAdaptations.length; iAda++) {
-            const currentAdaptation = currentAdaptations[iAda];
-
-            const representations : any[] = [];
-            for (let iRep = 0; iRep < currentAdaptation.representations.length; iRep++) {
-              const currentRepresentation = currentAdaptation.representations[iRep];
-
-              const contentInfos = {
-                manifest: currentManifest,
-                period: currentPeriod,
-                adaptation: currentAdaptation,
-                representation: currentRepresentation,
-              };
-
-              const newIndex = new MetaRepresentationIndex(currentRepresentation.index,
-                                                           [contentOffset, contentEnd],
-                                                           content.transport,
-                                                           contentInfos);
-              representations.push({
-                bitrate: currentRepresentation.bitrate,
-                index: newIndex,
-                id: currentRepresentation.id,
-                height: currentRepresentation.height,
-                width: currentRepresentation.width,
-                mimeType: currentRepresentation.mimeType,
-                frameRate: currentRepresentation.frameRate,
-                codecs: currentRepresentation.codec,
-                contentProtections: currentRepresentation.contentProtections,
-              });
-            }
-            adaptationsForCurrentType.push({
-              id: currentAdaptation.id,
-              representations,
-              type: currentAdaptation.type,
-              audioDescription: currentAdaptation.isAudioDescription,
-              closedCaption: currentAdaptation.isClosedCaption,
-              isDub: currentAdaptation.isDub,
-              language: currentAdaptation.language,
-            });
-            acc[type] = adaptationsForCurrentType;
-          }
-          return acc;
-        }, {});
-
-      // TODO only first period?
-      const textTracks : IMetaPlaylistTextTrack[] =
-        content.textTracks === undefined ? [] :
-                                           content.textTracks;
-      const newTextAdaptations : IParsedAdaptation[] = textTracks.map((track) => {
-        const adaptationID = "gen-text-ada-" + generateAdaptationID();
-        const representationID = "gen-text-rep-" + generateRepresentationID();
-        return {
-          id: adaptationID,
-          type: "text",
-          language: track.language,
-          closedCaption: track.closedCaption,
-          manuallyAdded: true,
-          representations: [
-            { bitrate: 0,
-              id: representationID,
-              mimeType: track.mimeType,
-              codecs: track.codecs,
-              index: new StaticRepresentationIndex({ media: track.url }),
-            },
-          ],
+      if (!currentPeriod.isFetched()) {
+        const partialPeriod : IParsedPartialPeriod = {
+          id: formatId(currentManifest.id) + "_" + formatId(currentPeriod.id),
+          adaptations: undefined,
+          duration: currentPeriod.duration,
+          start: contentOffset + currentPeriod.start,
         };
-      }, []);
-
-      if (newTextAdaptations.length > 0) {
-        if (adaptations.text == null) {
-          adaptations.text = newTextAdaptations;
-        } else {
-          adaptations.text.push(...newTextAdaptations);
-        }
+        manifestPeriods.push(partialPeriod);
+      } else {
+        const parsedPeriod = convertOriginalPeriod({ manifest : currentManifest,
+                                                     period: currentPeriod },
+                                                   content,
+                                                   contentOffset,
+                                                   generateAdaptationID,
+                                                   generateRepresentationID);
+        manifestPeriods.push(parsedPeriod);
       }
-
-      const newPeriod : IParsedPeriod = {
-        id: formatId(currentManifest.id) + "_" + formatId(currentPeriod.id),
-        adaptations,
-        duration: currentPeriod.duration,
-        start: contentOffset + currentPeriod.start,
-      };
-      manifestPeriods.push(newPeriod);
     }
 
     for (let i = manifestPeriods.length - 1; i >= 0; i--) {

@@ -20,11 +20,11 @@ import {
 } from "rxjs";
 import Manifest, {
   Adaptation,
+  IFetchedPeriod,
   IRepresentationFilter,
   ISegment,
   ISupplementaryImageTrack,
   ISupplementaryTextTrack,
-  Period,
   Representation,
 } from "../manifest";
 import { IBifThumbnail } from "../parsers/images/bif";
@@ -70,7 +70,7 @@ export interface IManifestLoaderArguments {
 // Argument for the loader of the segment pipelines
 export interface ISegmentLoaderArguments {
   manifest : Manifest; // Manifest related to this segment
-  period : Period; // Period related to this segment
+  period : IFetchedPeriod; // Period related to this segment
   adaptation : Adaptation; // Adaptation related to this segment
   representation : Representation; // Representation related to this segment
   segment : ISegment; // Segment we want to load
@@ -169,7 +169,7 @@ export interface ISegmentParserArguments<T> {
                            // be useful for the following regular segments.
   content : {
     manifest : Manifest; // Manifest related to this segment
-    period : Period; // Period related to this segment
+    period : IFetchedPeriod; // Period related to this segment
     adaptation : Adaptation; // Adaptation related to this segment
     representation : Representation; // Representation related to this segment
     segment : ISegment; // The segment we want to parse

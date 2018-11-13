@@ -22,8 +22,8 @@ import {
 import { map } from "rxjs/operators";
 import Manifest, {
   Adaptation,
+  IFetchedPeriod,
   ISegment,
-  Period,
   Representation,
 } from "../../../manifest";
 import objectAssign from "../../../utils/object_assign";
@@ -51,13 +51,13 @@ export default function pushInitSegment<T>(
     queuedSourceBuffer } : { clock$ : Observable<{ currentTime : number }>;
                              content: { adaptation : Adaptation;
                                         manifest : Manifest;
-                                        period : Period;
+                                        period : IFetchedPeriod;
                                         representation : Representation; };
                              segmentData : T | null;
                              segment : ISegment;
                              queuedSourceBuffer : QueuedSourceBuffer<T>; }
 ) : Observable< IBufferEventAddedSegment<T> > {
-  return observableDefer(() => {
+  return observableDefer(() : Observable<IBufferEventAddedSegment<T>> => {
     if (segmentData === null) {
       return EMPTY;
     }

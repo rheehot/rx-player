@@ -34,8 +34,8 @@ import { ManualTimeRanges } from "../../custom_source_buffers";
 import log from "../../log";
 import {
   Adaptation,
+  IFetchedPeriod,
   ISegment,
-  Period,
   Representation,
 } from "../../manifest";
 import objectAssign from "../../utils/object_assign";
@@ -80,7 +80,7 @@ export interface IPushedChunkData<T> {
 // corresponding to this chunk.
 export interface IPushedChunkInventoryInfos {
   adaptation : Adaptation;
-  period : Period;
+  period : IFetchedPeriod;
   representation : Representation;
   segment : ISegment; // The  segment object linked to the chunk.
   estimatedStart? : number; // Estimated start time, in s, of the chunk
@@ -95,7 +95,7 @@ export interface IPushChunkInfos<T> { data : IPushedChunkData<T>;
 // `endOfSegment` method.
 export interface IEndOfSegmentInfos {
   adaptation : Adaptation; // The Adaptation linked to the segment.
-  period : Period; // The Period linked to the segment.
+  period : IFetchedPeriod; // The Period linked to the segment.
   representation : Representation; // The Representation linked to the segment.
   segment : ISegment; // The corresponding Segment object.
 }

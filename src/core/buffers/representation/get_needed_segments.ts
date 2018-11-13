@@ -30,8 +30,8 @@ import log from "../../../log";
 import Manifest, {
   Adaptation,
   // areSameContent,
+  IFetchedPeriod,
   ISegment,
-  Period,
   Representation,
 } from "../../../manifest";
 import SimpleSet from "../../../utils/simple_set";
@@ -44,7 +44,7 @@ const { CONTENT_REPLACEMENT_PADDING,
 
 export interface ISegmentFilterArgument { content: { adaptation : Adaptation;
                                                      manifest : Manifest;
-                                                     period : Period;
+                                                     period : IFetchedPeriod;
                                                      representation : Representation; };
                                           currentPlaybackTime: number;
                                           knownStableBitrate : number | undefined;
@@ -162,11 +162,11 @@ export default function getNeededSegments({
  */
 function shouldContentBeReplaced(
   oldContent : { adaptation : Adaptation;
-                 period : Period;
+                 period : IFetchedPeriod;
                  representation : Representation;
                  segment : ISegment; },
   currentContent : { adaptation : Adaptation;
-                     period : Period;
+                     period : IFetchedPeriod;
                      representation : Representation; },
   currentPlaybackTime: number,
   knownStableBitrate? : number
