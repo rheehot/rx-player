@@ -96,6 +96,7 @@ export interface IParsedPartialPeriod {
   start : number;
 
   // optional
+  url? : string;
   adaptations? : IParsedAdaptations;
   duration? : number;
   end? : number;
