@@ -112,22 +112,28 @@ export default class OverlayRepresentationIndex implements IRepresentationIndex 
   }
 
   /**
+   * @returns {Boolean}
+   */
+  isSegmentStillAvailable() : true {
+    return true;
+  }
+
+  /**
+   * @returns {Boolean}
+   */
+  canBeOutOfSyncError() : false {
+    return false;
+  }
+
+  /**
    * @returns {Number}
    */
   checkDiscontinuity() : -1 {
     return -1;
   }
 
-  canBeOutOfSyncError() : boolean {
-    return false;
-  }
-
   isFinished() : boolean {
     return this._periodEnd !== null;
-  }
-
-  isSegmentStillAvailable() : boolean {
-    return true;
   }
 
   _addSegments() : void {
