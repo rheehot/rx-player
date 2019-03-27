@@ -243,15 +243,7 @@ function createOrReuseQueuedSourceBuffer<T>(
     return currentQSourceBuffer;
   }
   const codec = getFirstDeclaredMimeType(adaptation);
-  const sbOptions = (() => {
-      if (bufferType === "text") {
-        return options.textTrackOptions;
-      }
-      if (bufferType === "overlay") {
-        return options.overlayOptions;
-      }
-    })();
-  return sourceBuffersStore.createSourceBuffer(bufferType, codec, sbOptions);
+  return sourceBuffersStore.createSourceBuffer(bufferType, codec, options);
 }
 
 /**
