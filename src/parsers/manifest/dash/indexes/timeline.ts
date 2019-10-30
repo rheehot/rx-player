@@ -301,9 +301,15 @@ export default class TimelineRepresentationIndex implements IRepresentationIndex
    */
   getSegments(from : number, duration : number) : ISegment[] {
     this._refreshTimeline(); // first clear timeline if needed
+    const firstPosition = this.getFirstPosition();
+    const lastPosition = this.getLastPosition();
+    const start = firstPosition !== null ? Math.max(firstPosition, from) :
+                                           from;
+    const end = lastPosition !== null ? Math.min(lastPosition, from + duration) :
+                                        from + duration;
     return getSegmentsFromTimeline(this._index,
-                                   from,
-                                   duration,
+                                   start,
+                                   end - start,
                                    this._scaledPeriodEnd);
   }
 
@@ -344,10 +350,27 @@ export default class TimelineRepresentationIndex implements IRepresentationIndex
    */
   getFirstPosition() : number|null {
     this._refreshTimeline();
-    const index = this._index;
-    return index.timeline.length === 0 ? null :
-                                         fromIndexTime(index.timeline[0].start,
-                                                       index);
+    const { timescale, timeline } = this._index;
+    const timelineStart = timeline[0].start;
+    const lastPosition = this._manifestBoundsCalculator.getMaximumBound();
+    if (lastPosition !== undefined &&
+        (lastPosition * timescale) < timelineStart) {
+      return null;
+    }
+    const firstPosition = this._manifestBoundsCalculator.getMinimumBound();
+    if (firstPosition !== undefined && (firstPosition * timescale) >= timelineStart) {
+      for (let i = 0; i < timeline.length; i++) {
+        const timelineElement = timeline[i];
+        if (timelineElement !== undefined &&
+            timelineElement.start <= (firstPosition * timescale) &&
+            (timelineElement.start + timelineElement.duration) >
+              (firstPosition * timescale)) {
+          return fromIndexTime(timelineElement.start, this._index);
+        }
+      }
+    }
+    return timeline.length === 0 ? null :
+                                   fromIndexTime(timelineStart, this._index);
   }
 
   /**
@@ -358,15 +381,32 @@ export default class TimelineRepresentationIndex implements IRepresentationIndex
    */
   getLastPosition() : number|null {
     this._refreshTimeline();
-    const { timeline } = this._index;
+    const { timeline, timescale } = this._index;
     if (timeline.length === 0) {
       return null;
     }
     const lastTimelineElement = timeline[timeline.length - 1];
-    const lastTime = getIndexSegmentEnd(lastTimelineElement,
-                                        null,
-                                        this._scaledPeriodEnd);
-    return fromIndexTime(lastTime, this._index);
+    const indexSegmentEnd = getIndexSegmentEnd(lastTimelineElement,
+                                               null,
+                                               this._scaledPeriodEnd);
+    const firstPosition = this._manifestBoundsCalculator.getMinimumBound();
+    if (firstPosition !== undefined &&
+        (firstPosition * timescale) > indexSegmentEnd) {
+      return null;
+    }
+    const maxPos = this._manifestBoundsCalculator.getMaximumBound();
+    if (maxPos !== undefined && (maxPos * timescale) < indexSegmentEnd) {
+      for (let i = 0; i < timeline.length; i++) {
+        const timelineElement = timeline[i];
+        if (timelineElement !== undefined &&
+            timelineElement.start <= (maxPos * timescale) &&
+            (timelineElement.start + timelineElement.duration) > (maxPos * timescale)) {
+          return fromIndexTime(timelineElement.start + timelineElement.duration,
+                               this._index);
+        }
+      }
+    }
+    return fromIndexTime(indexSegmentEnd, this._index);
   }
 
   /**
@@ -383,7 +423,13 @@ export default class TimelineRepresentationIndex implements IRepresentationIndex
     }
     this._refreshTimeline();
     const { timeline, timescale, indexTimeOffset } = this._index;
-    return isSegmentStillAvailable(segment, timeline, timescale, indexTimeOffset);
+    const firstPos = this.getFirstPosition();
+    const lastPos = this.getLastPosition();
+    const segments = timeline.filter((t) => {
+      return ((firstPos === null) || t.start >= firstPos) &&
+             ((lastPos === null) || ((t.start + t.duration) < lastPos));
+    });
+    return isSegmentStillAvailable(segment, segments, timescale, indexTimeOffset);
   }
 
   /**
