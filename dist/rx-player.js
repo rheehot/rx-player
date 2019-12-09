@@ -48416,6 +48416,14 @@ function getSegmentsFromSidx(buf, initialOffset) {
     offset += refSize;
   }
 
+  if (segments.length > 0) {
+    var lastSegment = segments[segments.length - 1];
+
+    if (lastSegment !== undefined && lastSegment.range !== undefined) {
+      lastSegment.range[1] = Infinity;
+    }
+  }
+
   return segments;
 }
 /**
