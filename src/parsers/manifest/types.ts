@@ -68,6 +68,7 @@ export interface IParsedAdaptation {
   isDub? : boolean; // If true this Adaptation is in a dub: it was recorded in
                     // another language than the original(s) one(s)
   language?: string; // Language the `Adaptation` is in, if it can be applied
+  trickModeTrack?: IParsedAdaptation;
 }
 
 // Representation of a given period of time in the Manifest
