@@ -16,11 +16,12 @@
 
 import BufferGarbageCollector from "./garbage_collector";
 import QueuedSourceBuffer, {
-  IBufferedChunk,
   IBufferType,
-  IPushChunkInfos,
   IPushedChunkData,
 } from "./queued_source_buffer";
+import SegmentInventory, {
+  IBufferedChunk,
+} from "./segment_inventory";
 import SourceBuffersStore, {
   getBufferTypes,
   ISourceBufferOptions,
@@ -32,10 +33,10 @@ export {
   BufferGarbageCollector,
   IBufferType,
   IBufferedChunk,
-  IPushChunkInfos,
   IPushedChunkData,
   ISourceBufferOptions,
   ITextTrackSourceBufferOptions,
   QueuedSourceBuffer,
+  SegmentInventory,
   getBufferTypes,
 };

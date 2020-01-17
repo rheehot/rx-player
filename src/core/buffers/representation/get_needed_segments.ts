@@ -40,26 +40,26 @@ const { BITRATE_REBUFFERING_RATIO,
         MAX_TIME_MISSING_FROM_COMPLETE_SEGMENT,
         MINIMUM_SEGMENT_SIZE } = config;
 
-export interface ISegmentFilterArgument { content: { adaptation : Adaptation;
+export interface ISegmentFilterArgument { bufferedSegments : IBufferedChunk[];
+                                          content: { adaptation : Adaptation;
                                                      manifest : Manifest;
                                                      period : Period;
                                                      representation : Representation; };
                                           fastSwitchingStep : number | undefined;
                                           loadedSegmentPendingPush : SimpleSet;
                                           neededRange : { start: number;
-                                                          end: number; };
-                                          segmentInventory : IBufferedChunk[]; }
+                                                          end: number; }; }
 
 /**
  * @param {Object} segmentFilterArgument
  * @returns {Array.<Object>}
  */
 export default function getNeededSegments({
+  bufferedSegments,
   content,
   fastSwitchingStep,
   loadedSegmentPendingPush,
   neededRange,
-  segmentInventory,
 } : ISegmentFilterArgument) : ISegment[] {
   // 1 - construct lists of segments possible and actually pushed
   const possibleSegments = content.representation.index
@@ -67,7 +67,7 @@ export default function getNeededSegments({
   const currentSegments = getCorrespondingBufferedSegments({
     start: Math.max(neededRange.start - 0.5, 0),
     end: neededRange.end + 0.5,
-  }, segmentInventory);
+  }, bufferedSegments);
 
   // 2 - remove from pushed list of current segments the contents we want to replace
   const consideredSegments = currentSegments

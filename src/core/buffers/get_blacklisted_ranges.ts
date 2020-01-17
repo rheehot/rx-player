@@ -21,7 +21,10 @@ import {
   Representation,
 } from "../../manifest";
 import { IRange } from "../../utils/ranges";
-import { QueuedSourceBuffer } from "../source_buffers";
+import {
+  QueuedSourceBuffer,
+  SegmentInventory,
+} from "../source_buffers";
 
 /**
  * Returns the buffered ranges which hold the given content.
@@ -32,13 +35,14 @@ import { QueuedSourceBuffer } from "../source_buffers";
  */
 export default function getBlacklistedRanges(
   queuedSourceBuffer : QueuedSourceBuffer<unknown>,
+  segmentInventory : SegmentInventory,
   contents : Array<{ adaptation : Adaptation;
                      period : Period;
                      representation : Representation; }>
 ) : IRange[] {
-  queuedSourceBuffer.synchronizeInventory();
+  segmentInventory.synchronizeBuffered(queuedSourceBuffer.getBufferedRanges());
   const accumulator : IRange[] = [];
-  const inventory = queuedSourceBuffer.getInventory();
+  const inventory = segmentInventory.getInventory();
 
   for (let i = 0; i < inventory.length; i++) {
     const chunk = inventory[i];

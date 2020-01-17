@@ -48,6 +48,7 @@ import SourceBuffersStore, {
   IBufferType,
   ITextTrackSourceBufferOptions,
   QueuedSourceBuffer,
+  SegmentInventory,
 } from "../../source_buffers";
 import AdaptationBuffer from "../adaptation";
 import EVENTS from "../events_generators";
@@ -116,12 +117,12 @@ export default function PeriodBuffer({
     switchMap((adaptation) => {
       if (adaptation == null) {
         log.info(`Buffer: Set no ${bufferType} Adaptation`, period);
-        const previousQSourceBuffer = sourceBuffersStore.get(bufferType);
+        const previousSBInfo = sourceBuffersStore.get(bufferType);
         let cleanBuffer$ : Observable<unknown>;
 
-        if (previousQSourceBuffer != null) {
+        if (previousSBInfo != null) {
           log.info(`Buffer: Clearing previous ${bufferType} SourceBuffer`);
-          cleanBuffer$ = previousQSourceBuffer
+          cleanBuffer$ = previousSBInfo.queuedSourceBuffer
             .removeBuffer(period.start,
                           period.end == null ? Infinity :
                                                period.end);
@@ -140,11 +141,13 @@ export default function PeriodBuffer({
       const newBuffer$ = clock$.pipe(
         take(1),
         mergeMap((tick) => {
-          const qSourceBuffer = createOrReuseQueuedSourceBuffer(sourceBuffersStore,
-                                                                bufferType,
-                                                                adaptation,
-                                                                options);
-          const strategy = getAdaptationSwitchStrategy(qSourceBuffer,
+          const { queuedSourceBuffer, segmentInventory } =
+            createOrReuseQueuedSourceBuffer(sourceBuffersStore,
+                                            bufferType,
+                                            adaptation,
+                                            options);
+          const strategy = getAdaptationSwitchStrategy(queuedSourceBuffer,
+                                                       segmentInventory,
                                                        period,
                                                        adaptation,
                                                        tick);
@@ -154,12 +157,14 @@ export default function PeriodBuffer({
 
           const cleanBuffer$ = strategy.type === "clean-buffer" ?
             observableConcat(...strategy.value.map(({ start, end }) =>
-                               qSourceBuffer.removeBuffer(start, end))
+                               queuedSourceBuffer.removeBuffer(start, end))
                             ).pipe(ignoreElements()) :
             EMPTY;
 
-          const bufferGarbageCollector$ = garbageCollectors.get(qSourceBuffer);
-          const adaptationBuffer$ = createAdaptationBuffer(adaptation, qSourceBuffer);
+          const bufferGarbageCollector$ = garbageCollectors.get(queuedSourceBuffer);
+          const adaptationBuffer$ = createAdaptationBuffer(adaptation,
+                                                           queuedSourceBuffer,
+                                                           segmentInventory);
 
           return observableConcat(cleanBuffer$,
                                   observableMerge(adaptationBuffer$,
@@ -176,16 +181,17 @@ export default function PeriodBuffer({
 
   /**
    * @param {Object} adaptation
-   * @param {Object} qSourceBuffer
+   * @param {Object} queuedSourceBuffer
    * @returns {Observable}
    */
   function createAdaptationBuffer<T>(
     adaptation : Adaptation,
-    qSourceBuffer : QueuedSourceBuffer<T>
+    queuedSourceBuffer : QueuedSourceBuffer<T>,
+    segmentInventory : SegmentInventory
   ) : Observable<IAdaptationBufferEvent<T>|IBufferWarningEvent> {
     const { manifest } = content;
     const adaptationBufferClock$ = clock$.pipe(map(tick => {
-      const buffered = qSourceBuffer.getBufferedRanges();
+      const buffered = queuedSourceBuffer.getBufferedRanges();
       return objectAssign({},
                           tick,
                           { bufferGap: getLeftSizeOfRange(buffered,
@@ -195,7 +201,8 @@ export default function PeriodBuffer({
                               clock$: adaptationBufferClock$,
                               content: { manifest, period, adaptation },
                               options,
-                              queuedSourceBuffer: qSourceBuffer,
+                              queuedSourceBuffer,
+                              segmentInventory,
                               segmentPipelineCreator,
                               wantedBufferAhead$ })
     .pipe(catchError((error : unknown) => {
@@ -231,7 +238,7 @@ function createOrReuseQueuedSourceBuffer<T>(
   bufferType : IBufferType,
   adaptation : Adaptation,
   options: { textTrackOptions? : ITextTrackSourceBufferOptions }
-) : QueuedSourceBuffer<T> {
+) : { queuedSourceBuffer : QueuedSourceBuffer<T>; segmentInventory : SegmentInventory } {
   const currentQSourceBuffer = sourceBuffersStore.get(bufferType);
   if (currentQSourceBuffer != null) {
     log.info("Buffer: Reusing a previous SourceBuffer for the type", bufferType);

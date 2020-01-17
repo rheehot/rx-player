@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import objectAssign from "object-assign";
 import {
   defer as observableDefer,
   EMPTY,
@@ -67,10 +66,7 @@ export default function pushInitSegment<T>(
                                          timestampOffset: 0,
                                          appendWindow: [ undefined, undefined ],
                                          codec };
-    const inventoryInfos = objectAssign({ segment }, content);
-    return appendSegmentToSourceBuffer(clock$,
-                                       queuedSourceBuffer,
-                                       { data, inventoryInfos })
+    return appendSegmentToSourceBuffer(clock$, queuedSourceBuffer, data)
       .pipe(map(() => {
         const buffered = queuedSourceBuffer.getBufferedRanges();
         return EVENTS.addedSegment(content, segment, buffered, segmentData);

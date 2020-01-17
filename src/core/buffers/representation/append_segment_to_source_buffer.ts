@@ -28,7 +28,7 @@ import {
 } from "rxjs/operators";
 import { MediaError } from "../../../errors";
 import {
-  IPushChunkInfos,
+  IPushedChunkData,
   QueuedSourceBuffer,
 } from "../../source_buffers";
 import forceGarbageCollection from "./force_garbage_collection";
@@ -46,9 +46,9 @@ import forceGarbageCollection from "./force_garbage_collection";
 export default function appendSegmentToSourceBuffer<T>(
   clock$ : Observable<{ currentTime : number }>,
   queuedSourceBuffer : QueuedSourceBuffer<T>,
-  dataInfos : IPushChunkInfos<T>
+  chunkData : IPushedChunkData<T>
 ) : Observable<unknown> {
-  const append$ = queuedSourceBuffer.pushChunk(dataInfos);
+  const append$ = queuedSourceBuffer.pushChunk(chunkData);
 
   return append$.pipe(
     catchError((appendError : unknown) => {
@@ -71,5 +71,6 @@ export default function appendSegmentToSourceBuffer<T>(
           throw new MediaError("BUFFER_FULL_ERROR", reason);
         })
       );
-    }));
+    })
+  );
 }

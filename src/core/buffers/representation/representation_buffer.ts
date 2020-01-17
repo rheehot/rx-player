@@ -68,7 +68,10 @@ import {
   ISegmentFetcherEvent,
   ISegmentFetcherWarning,
 } from "../../pipelines";
-import { QueuedSourceBuffer } from "../../source_buffers";
+import {
+  QueuedSourceBuffer,
+  SegmentInventory,
+} from "../../source_buffers";
 import EVENTS from "../events_generators";
 import {
   IBufferEventAddedSegment,
@@ -104,6 +107,7 @@ export interface IRepresentationBufferArguments<T> {
              period : Period;
              representation : Representation; };
   queuedSourceBuffer : QueuedSourceBuffer<T>;
+  segmentInventory : SegmentInventory;
   segmentFetcher : IPrioritizedSegmentFetcher<T>;
   terminate$ : Observable<void>;
   bufferGoal$ : Observable<number>;
@@ -166,6 +170,7 @@ export default function RepresentationBuffer<T>({
   fastSwitchingStep$, // Bitrate higher or equal to this value should not be
                       // replaced by segments of better quality
   queuedSourceBuffer, // interface to the SourceBuffer
+  segmentInventory, // Store segment information about pushed segments
   segmentFetcher, // allows to download new segments
   terminate$, // signal the RepresentationBuffer that it should terminate
 } : IRepresentationBufferArguments<T>) : Observable<IRepresentationBufferEvent<T>> {
@@ -215,7 +220,7 @@ export default function RepresentationBuffer<T>({
           neededSegments : IQueuedSegment[];
           shouldRefreshManifest : boolean; }
     {
-      queuedSourceBuffer.synchronizeInventory();
+      segmentInventory.synchronizeBuffered(queuedSourceBuffer.getBufferedRanges());
       const neededRange = getWantedRange(period, timing, bufferGoal);
 
       const discontinuity = timing.stalled != null ?
@@ -226,12 +231,13 @@ export default function RepresentationBuffer<T>({
         representation.index.shouldRefresh(neededRange.start,
                                            neededRange.end);
 
-      const segmentInventory = queuedSourceBuffer.getInventory();
-      let neededSegments = getNeededSegments({ content,
+      const bufferedSegments = segmentInventory.getInventory();
+
+      let neededSegments = getNeededSegments({ bufferedSegments,
+                                               content,
                                                fastSwitchingStep,
                                                loadedSegmentPendingPush,
-                                               neededRange,
-                                               segmentInventory })
+                                               neededRange })
         .map((segment) => ({ priority: getSegmentPriority(segment, timing),
                              segment }));
 
@@ -476,7 +482,8 @@ export default function RepresentationBuffer<T>({
                                   initSegmentData,
                                   parsedSegment: evt.value,
                                   segment: evt.segment,
-                                  queuedSourceBuffer });
+                                  queuedSourceBuffer,
+                                  segmentInventory });
 
       case "end-of-segment": {
         const { segment } = evt.value;

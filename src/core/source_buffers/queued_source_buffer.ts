@@ -33,19 +33,8 @@ import {
 import config from "../../config";
 import { ManualTimeRanges } from "../../custom_source_buffers";
 import log from "../../log";
-import {
-  Adaptation,
-  ISegment,
-  Period,
-  Representation,
-} from "../../manifest";
-import SegmentInventory, {
-  IBufferedChunk,
-  IInsertedChunkInfos,
-} from "./segment_inventory";
 
-const { APPEND_WINDOW_SECURITIES,
-        SOURCE_BUFFER_FLUSHING_INTERVAL, } = config;
+const { SOURCE_BUFFER_FLUSHING_INTERVAL } = config;
 
 // Every QueuedSourceBuffer types
 export type IBufferType = "audio" |
@@ -54,8 +43,7 @@ export type IBufferType = "audio" |
                           "image";
 
 enum SourceBufferAction { Push,
-                          Remove,
-                          EndOfSegment }
+                          Remove }
 
 // Content of the `data` property when pushing a new chunk
 // This will be the real data used with the underlying SourceBuffer.
@@ -75,35 +63,10 @@ export interface IPushedChunkData<T> {
                                         // will be ignored)
 }
 
-// Content of the `inventoryInfos` property when pushing a new chunk
-// This is what will be registered in the QueuedSourceBuffer's inventory.
-// corresponding to this chunk.
-export interface IPushedChunkInventoryInfos {
-  adaptation : Adaptation;
-  period : Period;
-  representation : Representation;
-  segment : ISegment; // The  segment object linked to the chunk.
-  estimatedStart? : number; // Estimated start time, in s, of the chunk
-  estimatedDuration? : number; // Estimated end time, in s, of the chunk
-}
-
-// Information to give when pushing a new chunk via the `pushChunk` method.
-export interface IPushChunkInfos<T> { data : IPushedChunkData<T>;
-                                      inventoryInfos : IPushedChunkInventoryInfos; }
-
-// Information to give when indicating a whole segment has been pushed via the
-// `endOfSegment` method.
-export interface IEndOfSegmentInfos {
-  adaptation : Adaptation; // The Adaptation linked to the segment.
-  period : Period; // The Period linked to the segment.
-  representation : Representation; // The Representation linked to the segment.
-  segment : ISegment; // The corresponding Segment object.
-}
-
 // Action created by the QueuedSourceBuffer to push a chunk.
 // Will be converted into an `IPushQueueItem` once in the queue
 interface IPushAction<T> { type : SourceBufferAction.Push;
-                           value : IPushChunkInfos<T>; }
+                           value : IPushedChunkData<T>; }
 
 // Action created by the QueuedSourceBuffer to remove Segment(s).
 // Will be converted into an `IRemoveQueueItem` once in the queue
@@ -111,16 +74,9 @@ interface IRemoveAction { type : SourceBufferAction.Remove;
                           value : { start : number;
                                     end : number; }; }
 
-// Action created by the QueuedSourceBuffer for validating that a complete
-// Segment has been or is being pushed to it.
-// Will be converted into an `IEndOfSegmentQueueItem` once in the queue
-interface IEndOfSegmentAction { type : SourceBufferAction.EndOfSegment;
-                                value : IEndOfSegmentInfos; }
-
 // Actions understood by the QueuedSourceBuffer
 type IQSBNewAction<T> = IPushAction<T> |
-                        IRemoveAction |
-                        IEndOfSegmentAction;
+                        IRemoveAction;
 
 // Item waiting in the queue to push a new chunk to the SourceBuffer.
 // T is the type of the segment pushed.
@@ -129,16 +85,10 @@ interface IPushQueueItem<T> extends IPushAction<T> { subject : Subject<unknown>;
 // Item waiting in the queue to remove segment(s) from the SourceBuffer.
 interface IRemoveQueueItem extends IRemoveAction { subject : Subject<unknown>; }
 
-// Item waiting in the queue to validate that the whole segment has been pushed
-interface IEndOfSegmentQueueItem extends IEndOfSegmentAction {
-  subject : Subject<unknown>;
-}
-
 // Action waiting in the queue.
 // T is the type of the segments pushed.
 type IQSBQueueItem<T> = IPushQueueItem<T> |
-                         IRemoveQueueItem |
-                         IEndOfSegmentQueueItem;
+                         IRemoveQueueItem;
 
 interface IPushData<T> { isInit : boolean;
                          segmentData : T;
@@ -150,13 +100,11 @@ interface IPushData<T> { isInit : boolean;
 // Once processed, Push queue items are separated into one or multiple tasks
 interface IPushTask<T> { type : SourceBufferAction.Push;
                          steps : Array<IPushData<T>>;
-                         inventoryData : IInsertedChunkInfos;
                          subject : Subject<unknown>; }
 
 // Type of task currently processed by the QueuedSourceBuffer
 type IPendingTask<T> = IPushTask<T> |
-                       IRemoveQueueItem |
-                       IEndOfSegmentQueueItem;
+                       IRemoveQueueItem;
 
 /**
  * Allows to push and remove new Segments to a SourceBuffer in a FIFO queue (not
@@ -174,9 +122,6 @@ export default class QueuedSourceBuffer<T> {
 
   // SourceBuffer implementation.
   private readonly _sourceBuffer : ICustomSourceBuffer<T>;
-
-  // Inventory of buffered segment
-  private readonly _segmentInventory : SegmentInventory;
 
   // Subject triggered when this QueuedSourceBuffer is disposed.
   // Helps to clean-up Observables created at its creation.
@@ -224,7 +169,6 @@ export default class QueuedSourceBuffer<T> {
     this._pendingTask = null;
     this._lastInitSegment = null;
     this._currentCodec = codec;
-    this._segmentInventory = new SegmentInventory();
 
     // Some browsers (happened with firefox 66) sometimes "forget" to send us
     // `update` or `updateend` events.
@@ -251,10 +195,6 @@ export default class QueuedSourceBuffer<T> {
    * Push a chunk of the media segment given to the attached SourceBuffer, in a
    * FIFO queue.
    *
-   * Once all chunks of a single Segment have been given to `pushChunk`, you
-   * should call `endOfSegment` to indicate that the whole Segment has been
-   * pushed.
-   *
    * Depending on the type of data appended, this might need an associated
    * initialization segment.
    *
@@ -272,7 +212,7 @@ export default class QueuedSourceBuffer<T> {
    * @param {Object} infos
    * @returns {Observable}
    */
-  public pushChunk(infos : IPushChunkInfos<T>) : Observable<unknown> {
+  public pushChunk(infos : IPushedChunkData<T>) : Observable<unknown> {
     log.debug("QSB: receiving order to push data to the SourceBuffer",
               this.bufferType,
               infos);
@@ -296,52 +236,11 @@ export default class QueuedSourceBuffer<T> {
   }
 
   /**
-   * Indicate that every chunks from a Segment has been given to pushChunk so
-   * far.
-   * This will update our internal Segment inventory accordingly.
-   * The returned Observable will emit and complete successively once the whole
-   * segment has been pushed and this indication is acknowledged.
-   * @param {Object} infos
-   * @returns {Observable}
-   */
-  public endOfSegment(infos : IEndOfSegmentInfos) : Observable<unknown> {
-    log.debug("QSB: receiving order for validating end of segment",
-              this.bufferType,
-              infos.segment);
-    return this._addToQueue({ type: SourceBufferAction.EndOfSegment,
-                              value: infos });
-  }
-
-  /**
-   * The maintained inventory can fall out of sync from garbage collection or
-   * other events.
-   *
-   * This methods allow to manually trigger a synchronization. It should be
-   * called before retrieving Segment information from it (e.g. with
-   * `getInventory`).
-   */
-  public synchronizeInventory() : void {
-    this._segmentInventory.synchronizeBuffered(this.getBufferedRanges());
-  }
-
-  /**
    * Returns the currently buffered data, in a TimeRanges object.
    * @returns {TimeRanges}
    */
   public getBufferedRanges() : TimeRanges | ManualTimeRanges {
     return this._sourceBuffer.buffered;
-  }
-
-  /**
-   * Returns the currently buffered data for which the content is known with
-   * the corresponding content information.
-   * /!\ This data can fall out of sync with the real buffered ranges. Please
-   * call `synchronizeInventory` before to make sure it is correctly
-   * synchronized.
-   * @returns {Array.<Object>}
-   */
-  public getInventory() : IBufferedChunk[] {
-    return this._segmentInventory.getInventory();
   }
 
   /**
@@ -441,17 +340,6 @@ export default class QueuedSourceBuffer<T> {
       if (this._pendingTask.type !== SourceBufferAction.Push ||
           this._pendingTask.steps.length === 0)
       {
-        switch (this._pendingTask.type) {
-          case SourceBufferAction.Push:
-            this._segmentInventory.insertChunk(this._pendingTask.inventoryData);
-            break;
-          case SourceBufferAction.EndOfSegment:
-            this._segmentInventory.completeSegment(this._pendingTask.value);
-            break;
-          case SourceBufferAction.Remove:
-            this.synchronizeInventory();
-            break;
-        }
         const { subject } = this._pendingTask;
         this._pendingTask = null;
         subject.next();
@@ -483,11 +371,6 @@ export default class QueuedSourceBuffer<T> {
     const task = this._pendingTask;
     try {
       switch (task.type) {
-        case SourceBufferAction.EndOfSegment:
-          // nothing to do, we will just acknowledge the segment.
-          log.debug("QSB: Acknowledging complete segment", task.value);
-          this._flush();
-          return;
         case SourceBufferAction.Push:
           const nextStep = task.steps.shift();
           if (nextStep == null ||
@@ -583,70 +466,30 @@ function convertQueueItemToTask<T>(
       // Push actions with both an init segment and a regular segment need
       // to be separated into two steps
       const steps = [];
-      const itemValue = item.value;
-      const { data, inventoryInfos } = itemValue;
-      const { estimatedDuration, estimatedStart, segment } = inventoryInfos;
-
-      // Cutting exactly at the start or end of the appendWindow can lead to
-      // cases of infinite rebuffering due to how browser handle such windows.
-      // To work-around that, we add a small offset before and after those.
-      const safeAppendWindow : [ number | undefined, number | undefined ] = [
-        data.appendWindow[0] !== undefined ?
-          Math.max(0, data.appendWindow[0] - APPEND_WINDOW_SECURITIES.START) :
-          undefined,
-        data.appendWindow[1] !== undefined ?
-          data.appendWindow[1] + APPEND_WINDOW_SECURITIES.END :
-          undefined,
-      ];
+      const data = item.value;
 
       if (data.initSegment !== null) {
         steps.push({ isInit: true,
                      segmentData: data.initSegment,
                      codec: data.codec,
                      timestampOffset: data.timestampOffset,
-                     appendWindow: safeAppendWindow });
+                     appendWindow: data.appendWindow });
       }
       if (data.chunk !== null) {
         steps.push({ isInit: false,
                      segmentData: data.chunk,
                      codec: data.codec,
                      timestampOffset: data.timestampOffset,
-                     appendWindow: safeAppendWindow });
+                     appendWindow: data.appendWindow });
       }
       if (steps.length === 0) {
         return null;
       }
-
-      let start = estimatedStart === undefined ? segment.time / segment.timescale :
-                                                 estimatedStart;
-      const duration = estimatedDuration === undefined ?
-        segment.duration / segment.timescale :
-        estimatedDuration;
-      let end = start + duration;
-
-      if (safeAppendWindow[0] !== undefined) {
-        start = Math.max(start, safeAppendWindow[0]);
-      }
-      if (safeAppendWindow[1] !== undefined) {
-        end = Math.min(end, safeAppendWindow[1]);
-      }
-
-      const inventoryData = { period: inventoryInfos.period,
-                              adaptation: inventoryInfos.adaptation,
-                              representation: inventoryInfos.representation,
-                              segment: inventoryInfos.segment,
-                              start,
-                              end };
       return { type: SourceBufferAction.Push,
                steps,
-               inventoryData,
                subject: item.subject };
 
     case SourceBufferAction.Remove:
-    case SourceBufferAction.EndOfSegment:
       return item;
   }
-  return null;
 }
-
-export { IBufferedChunk };

@@ -281,12 +281,15 @@ export default function BufferOrchestrator(
 
     const handleDecipherabilityUpdate$ = fromEvent(manifest, "decipherabilityUpdate")
       .pipe(mergeMap((updates) => {
-        const queuedSourceBuffer = sourceBuffersStore.get(bufferType);
+        const sbInfo = sourceBuffersStore.get(bufferType);
         const hasType = updates.some(update => update.adaptation.type === bufferType);
-        if (!hasType || queuedSourceBuffer == null) {
+        if (!hasType || sbInfo === null) {
           return EMPTY; // no need to stop the current buffers
         }
-        const rangesToClean = getBlacklistedRanges(queuedSourceBuffer, updates);
+        const { queuedSourceBuffer, segmentInventory } = sbInfo;
+        const rangesToClean = getBlacklistedRanges(queuedSourceBuffer,
+                                                   segmentInventory,
+                                                   updates);
         enableOutOfBoundsCheck = false;
         destroyBuffers$.next();
         return observableConcat(

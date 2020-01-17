@@ -21,6 +21,7 @@ import {
   Observable,
 } from "rxjs";
 import { map } from "rxjs/operators";
+import config from "../../../config";
 import Manifest, {
   Adaptation,
   ISegment,
@@ -28,10 +29,15 @@ import Manifest, {
   Representation,
 } from "../../../manifest";
 import { ISegmentParserParsedSegment } from "../../../transports";
-import { QueuedSourceBuffer } from "../../source_buffers";
+import {
+  QueuedSourceBuffer,
+  SegmentInventory,
+} from "../../source_buffers";
 import EVENTS from "../events_generators";
 import { IBufferEventAddedSegment } from "../types";
 import appendSegmentToSourceBuffer from "./append_segment_to_source_buffer";
+
+const { APPEND_WINDOW_SECURITIES } = config;
 
 /**
  * Push a given media segment (non-init segment) to a QueuedSourceBuffer.
@@ -47,15 +53,17 @@ export default function pushMediaSegment<T>(
     initSegmentData,
     parsedSegment,
     segment,
-    queuedSourceBuffer } : { clock$ : Observable<{ currentTime : number }>;
-                             content: { adaptation : Adaptation;
-                                        manifest : Manifest;
-                                        period : Period;
-                                        representation : Representation; };
-                             initSegmentData : T | null;
-                             parsedSegment : ISegmentParserParsedSegment<T>;
-                             segment : ISegment;
-                             queuedSourceBuffer : QueuedSourceBuffer<T>; }
+    queuedSourceBuffer,
+    segmentInventory } : { clock$ : Observable<{ currentTime : number }>;
+                           content: { adaptation : Adaptation;
+                                      manifest : Manifest;
+                                      period : Period;
+                                      representation : Representation; };
+                           initSegmentData : T | null;
+                           parsedSegment : ISegmentParserParsedSegment<T>;
+                           segment : ISegment;
+                           queuedSourceBuffer : QueuedSourceBuffer<T>;
+                           segmentInventory: SegmentInventory; }
 ) : Observable< IBufferEventAddedSegment<T> > {
   return observableDefer(() => {
     if (parsedSegment.chunkData === null) {
@@ -65,11 +73,23 @@ export default function pushMediaSegment<T>(
             chunkInfos,
             chunkOffset,
             appendWindow } = parsedSegment;
+
+    // Cutting exactly at the start or end of the appendWindow can lead to
+    // cases of infinite rebuffering due to how browser handle such windows.
+    // To work-around that, we add a small offset before and after those.
+    const safeAppendWindow : [ number | undefined, number | undefined ] = [
+      appendWindow[0] !== undefined ?
+        Math.max(0, appendWindow[0] - APPEND_WINDOW_SECURITIES.START) :
+        undefined,
+      appendWindow[1] !== undefined ?
+        appendWindow[1] + APPEND_WINDOW_SECURITIES.END :
+        undefined,
+    ];
     const codec = content.representation.getMimeTypeString();
     const data = { initSegment: initSegmentData,
                    chunk: chunkData,
                    timestampOffset: chunkOffset,
-                   appendWindow,
+                   appendWindow: safeAppendWindow,
                    codec };
 
     let estimatedStart : number|undefined;
@@ -86,8 +106,29 @@ export default function pushMediaSegment<T>(
                                         content);
     return appendSegmentToSourceBuffer(clock$,
                                        queuedSourceBuffer,
-                                       { data, inventoryInfos })
+                                       data)
       .pipe(map(() => {
+        let start = estimatedStart === undefined ? segment.time / segment.timescale :
+                                                   estimatedStart;
+        const duration = estimatedDuration === undefined ?
+          segment.duration / segment.timescale :
+          estimatedDuration;
+        let end = start + duration;
+
+        if (safeAppendWindow[0] !== undefined) {
+          start = Math.max(start, safeAppendWindow[0]);
+        }
+        if (safeAppendWindow[1] !== undefined) {
+          end = Math.min(end, safeAppendWindow[1]);
+        }
+
+        const inventoryData = { period: inventoryInfos.period,
+                                adaptation: inventoryInfos.adaptation,
+                                representation: inventoryInfos.representation,
+                                segment: inventoryInfos.segment,
+                                start,
+                                end };
+        segmentInventory.insertChunk(inventoryData);
         const buffered = queuedSourceBuffer.getBufferedRanges();
         return EVENTS.addedSegment(content, segment, buffered, chunkData);
       }));

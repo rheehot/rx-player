@@ -21,6 +21,7 @@ import log from "../../log";
 import QueuedSourceBuffer, {
   IBufferType,
 } from "./queued_source_buffer";
+import SegmentInventory from "./segment_inventory";
 
 type TypedArray = Int8Array |
                   Int16Array |
@@ -67,6 +68,12 @@ export type ISourceBufferOptions = ITextTrackSourceBufferOptions;
 // Types of "native" SourceBuffers
 type INativeSourceBufferType = "audio" | "video";
 
+interface ISourceBufferStoreElement<T> {
+  queuedSourceBuffer : QueuedSourceBuffer<T>; // SourceBuffer Wrapper
+  segmentInventory : SegmentInventory; // Keep track of segment information
+                                       // about the segment pushed
+}
+
 /**
  * Allows to easily create and dispose SourceBuffers.
  *
@@ -80,6 +87,9 @@ type INativeSourceBufferType = "audio" | "video";
  *
  * The returned SourceBuffer is actually a QueuedSourceBuffer instance which
  * wrap a SourceBuffer implementation to queue all its actions.
+ *
+ * Each QueuedSourceBuffer is returned with a SegmentInventory, which allows you
+ * to keep track of which segment has been pushed to it.
  *
  * @class SourceBuffersStore
  */
@@ -99,10 +109,18 @@ export default class SourceBuffersStore {
   private readonly _mediaSource : MediaSource;
 
   private _initializedSourceBuffers : {
-    audio? : QueuedSourceBuffer<ArrayBuffer|ArrayBufferView|TypedArray|DataView|null>;
-    video? : QueuedSourceBuffer<ArrayBuffer|ArrayBufferView|TypedArray|DataView|null>;
-    text? : QueuedSourceBuffer<unknown>;
-    image? : QueuedSourceBuffer<unknown>;
+    audio? : ISourceBufferStoreElement< ArrayBuffer |
+                                        ArrayBufferView |
+                                        TypedArray |
+                                        DataView |
+                                        null>;
+    video? : ISourceBufferStoreElement< ArrayBuffer |
+                                        ArrayBufferView |
+                                        TypedArray |
+                                        DataView |
+                                        null>;
+    text? : ISourceBufferStoreElement<unknown>;
+    image? : ISourceBufferStoreElement<unknown>;
   };
 
   /**
@@ -117,20 +135,22 @@ export default class SourceBuffersStore {
   }
 
   /**
-   * Returns the created QueuedSourceBuffer for the given type.
+   * Returns the created QueuedSourceBuffer and its associated SegmentInventory
+   * for the given type.
    * Returns null if no QueuedSourceBuffer were created for the given type.
    *
    * @param {string} bufferType
-   * @returns {QueuedSourceBuffer|null}
+   * @returns {Object|null}
    */
-  public get(bufferType : IBufferType) : QueuedSourceBuffer<any>|null {
+  public get(bufferType : IBufferType) : ISourceBufferStoreElement<any>|null {
     const initializedBuffer = this._initializedSourceBuffers[bufferType];
     return initializedBuffer != null ? initializedBuffer :
                                        null;
   }
 
   /**
-   * Creates a new QueuedSourceBuffer for the SourceBuffer type.
+   * Creates the created QueuedSourceBuffer and its associated SegmentInventory
+   * for the given type.
    * Reuse an already created one if a QueuedSourceBuffer for the given type
    * already exists.
    * @param {string} bufferType
@@ -142,24 +162,27 @@ export default class SourceBuffersStore {
     bufferType : IBufferType,
     codec : string,
     options : ISourceBufferOptions = {}
-  ) : QueuedSourceBuffer<any> {
+  ) : ISourceBufferStoreElement<any> {
     const memorizedSourceBuffer = this._initializedSourceBuffers[bufferType];
     if (shouldHaveNativeSourceBuffer(bufferType)) {
       if (memorizedSourceBuffer != null) {
-        if (memorizedSourceBuffer.codec !== codec) {
+        if (memorizedSourceBuffer.queuedSourceBuffer.codec !== codec) {
           log.warn("SB: Reusing native SourceBuffer with codec",
-                   memorizedSourceBuffer.codec, "for codec", codec);
+                   memorizedSourceBuffer.queuedSourceBuffer.codec,
+                   "for codec",
+                   codec);
         } else {
           log.info("SB: Reusing native SourceBuffer with codec", codec);
         }
         return memorizedSourceBuffer;
       }
       log.info("SB: Adding native SourceBuffer with codec", codec);
-      const nativeSourceBuffer = createNativeQueuedSourceBuffer(bufferType,
+      const queuedSourceBuffer = createNativeQueuedSourceBuffer(bufferType,
                                                                 this._mediaSource,
                                                                 codec);
-      this._initializedSourceBuffers[bufferType] = nativeSourceBuffer;
-      return nativeSourceBuffer;
+      const element = { queuedSourceBuffer, segmentInventory: new SegmentInventory() };
+      this._initializedSourceBuffers[bufferType] = element;
+      return element;
     }
 
     if (memorizedSourceBuffer != null) {
@@ -189,8 +212,9 @@ export default class SourceBuffersStore {
       const queuedSourceBuffer = new QueuedSourceBuffer<unknown>("text",
                                                                  codec,
                                                                  sourceBuffer);
-      this._initializedSourceBuffers.text = queuedSourceBuffer;
-      return queuedSourceBuffer;
+      const element = { queuedSourceBuffer, segmentInventory: new SegmentInventory() };
+      this._initializedSourceBuffers.text = element;
+      return element;
     } else if (bufferType === "image") {
       if (features.imageBuffer == null) {
         throw new Error("Image buffer feature not activated");
@@ -200,8 +224,8 @@ export default class SourceBuffersStore {
       const queuedSourceBuffer = new QueuedSourceBuffer<unknown>("image",
                                                                  codec,
                                                                  sourceBuffer);
-      this._initializedSourceBuffers.image = queuedSourceBuffer;
-      return queuedSourceBuffer;
+      const element = { queuedSourceBuffer, segmentInventory: new SegmentInventory() };
+      return element;
     }
 
     log.error("SB: Unknown buffer type:", bufferType);
@@ -221,16 +245,17 @@ export default class SourceBuffersStore {
     }
 
     log.info("SB: Aborting SourceBuffer", bufferType);
-    memorizedSourceBuffer.dispose();
+    memorizedSourceBuffer.queuedSourceBuffer.dispose();
     if (!shouldHaveNativeSourceBuffer(bufferType) ||
         this._mediaSource.readyState === "open"
     ) {
       try {
-        memorizedSourceBuffer.abort();
+        memorizedSourceBuffer.queuedSourceBuffer.abort();
       } catch (e) {
         log.warn(`SB: Failed to abort a ${bufferType} SourceBuffer:`, e);
       }
     }
+    memorizedSourceBuffer.segmentInventory.reset();
     delete this._initializedSourceBuffers[bufferType];
   }
 

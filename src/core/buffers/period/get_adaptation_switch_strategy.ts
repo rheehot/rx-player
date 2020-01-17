@@ -27,7 +27,10 @@ import {
   isTimeInRanges,
   keepRangeIntersection,
 } from "../../../utils/ranges";
-import { QueuedSourceBuffer } from "../../source_buffers";
+import {
+  QueuedSourceBuffer,
+  SegmentInventory,
+} from "../../source_buffers";
 
 const { ADAPTATION_SWITCH_BUFFER_PADDINGS } = config;
 
@@ -47,6 +50,7 @@ export type IAdaptationSwitchStrategy =
  */
 export default function getAdaptationSwitchStrategy(
   queuedSourceBuffer : QueuedSourceBuffer<unknown>,
+  segmentInventory : SegmentInventory,
   period : Period,
   adaptation : Adaptation,
   clockTick : { currentTime : number; readyState : number }
@@ -65,7 +69,8 @@ export default function getAdaptationSwitchStrategy(
   }
 
   // remove from that intersection what we know to be the right Adaptation
-  const adaptationInBuffer = getBufferedRangesFromAdaptation(queuedSourceBuffer,
+  segmentInventory.synchronizeBuffered(queuedSourceBuffer.getBufferedRanges());
+  const adaptationInBuffer = getBufferedRangesFromAdaptation(segmentInventory,
                                                              period,
                                                              adaptation);
   const { currentTime } = clockTick;
@@ -106,12 +111,11 @@ export default function getAdaptationSwitchStrategy(
  * @returns {Array.<Object>}
  */
 function getBufferedRangesFromAdaptation(
-  queuedSourceBuffer : QueuedSourceBuffer<unknown>,
+  segmentInventory : SegmentInventory,
   period : Period,
   adaptation : Adaptation
 ) : IRange[] {
-  queuedSourceBuffer.synchronizeInventory();
-  return queuedSourceBuffer.getInventory()
+  return segmentInventory.getInventory()
     .reduce<IRange[]>((acc : IRange[], chunk) : IRange[] => {
       if (chunk.infos.period.id !== period.id ||
           chunk.infos.adaptation.id !== adaptation.id)

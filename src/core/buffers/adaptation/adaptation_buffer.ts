@@ -67,7 +67,10 @@ import ABRManager, {
   IABRRequest,
 } from "../../abr";
 import { SegmentPipelineCreator } from "../../pipelines";
-import { QueuedSourceBuffer } from "../../source_buffers";
+import {
+  QueuedSourceBuffer,
+  SegmentInventory,
+} from "../../source_buffers";
 import EVENTS from "../events_generators";
 import RepresentationBuffer, {
   IRepresentationBufferClockTick,
@@ -99,6 +102,7 @@ export interface IAdaptationBufferArguments<T> {
   options: { manualBitrateSwitchingMode : "seamless" | "direct" }; // Switch strategy
   queuedSourceBuffer : QueuedSourceBuffer<T>; // Interact with the SourceBuffer
   segmentPipelineCreator : SegmentPipelineCreator<any>; // Load and parse segments
+  segmentInventory : SegmentInventory; // Store information about pushed segments
   wantedBufferAhead$ : BehaviorSubject<number>; // Buffer goal wanted by the user
 }
 
@@ -121,6 +125,7 @@ export default function AdaptationBuffer<T>({
   options,
   queuedSourceBuffer,
   segmentPipelineCreator,
+  segmentInventory,
   wantedBufferAhead$,
 } : IAdaptationBufferArguments<T>) : Observable<IAdaptationBufferEvent<T>> {
   const directManualBitrateSwitching = options.manualBitrateSwitchingMode === "direct";
@@ -267,6 +272,7 @@ export default function AdaptationBuffer<T>({
                                                period,
                                                manifest },
                                     queuedSourceBuffer,
+                                    segmentInventory,
                                     segmentFetcher,
                                     terminate$: terminateCurrentBuffer$,
                                     bufferGoal$,
