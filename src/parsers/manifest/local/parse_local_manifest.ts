@@ -24,6 +24,7 @@ import {
   IParsedPeriod,
   IParsedRepresentation,
 } from "../types";
+import createVariants from "../utils/create_variants";
 import LocalRepresentationIndex from "./representation_index";
 import {
   ILocalAdaptation,
@@ -89,22 +90,24 @@ function parsePeriod(
   isFinished : boolean
 ) : IParsedPeriod {
   const adaptationIdGenerator = idGenerator();
+  const adaptations = period.adaptations
+    .reduce<Partial<Record<string, IParsedAdaptation[]>>>((acc, ada) => {
+      const type = ada.type;
+      let adaps = acc[type];
+      if (adaps === undefined) {
+        adaps = [];
+        acc[type] = adaps;
+      }
+      adaps.push(parseAdaptation(ada, adaptationIdGenerator, isFinished));
+      return acc;
+    }, {});
   return {
     id: "period-" + periodIdGenerator(),
-    start: period.start,
-    end: period.duration - period.start,
+    adaptations,
     duration: period.duration,
-    adaptations: period.adaptations
-      .reduce<Partial<Record<string, IParsedAdaptation[]>>>((acc, ada) => {
-        const type = ada.type;
-        let adaps = acc[type];
-        if (adaps === undefined) {
-          adaps = [];
-          acc[type] = adaps;
-        }
-        adaps.push(parseAdaptation(ada, adaptationIdGenerator, isFinished));
-        return acc;
-      }, {}),
+    end: period.duration - period.start,
+    start: period.start,
+    variants: createVariants(adaptations),
   };
 }
 

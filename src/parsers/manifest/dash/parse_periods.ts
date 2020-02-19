@@ -23,6 +23,7 @@ import {
   IParsedAdaptations,
   IParsedPeriod,
 } from "../types";
+import createVariants from "../utils/create_variants";
 import extractMinimumAvailabilityTimeOffset from "./extract_minimum_availability_time_offset";
 import flattenOverlappingPeriods from "./flatten_overlapping_periods";
 import getPeriodsTimeInformation from "./get_periods_time_infos";
@@ -122,11 +123,13 @@ export default function parsePeriods(
                           timeShiftBufferDepth };
     const adaptations = parseAdaptationSets(periodIR.children.adaptations,
                                             periodInfos);
+    const variants = createVariants(adaptations);
     const parsedPeriod : IParsedPeriod = { id: periodID,
-                                           start: periodStart,
-                                           end: periodEnd,
+                                           adaptations,
                                            duration: periodDuration,
-                                           adaptations };
+                                           end: periodEnd,
+                                           start: periodStart,
+                                           variants };
     parsedPeriods.unshift(parsedPeriod);
 
     if (!manifestBoundsCalculator.lastPositionIsKnown()) {

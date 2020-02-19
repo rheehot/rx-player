@@ -77,7 +77,9 @@ export interface IParsedPeriod {
   start : number; // Start time at which the Period begins.
                   // For static contents, the start of the first Period should
                   // corresponds to the time of the first available segment
-  adaptations : IParsedAdaptations; // Available tracks for this Period
+  adaptations : IParsedAdaptations; // Available list of tracks for this Period
+  variants : IParsedVariant[]; // Every combination of tracks and qualities that
+                               // can be played together
 
   // optional
   duration? : number; // duration of the Period (from the start to the end),
@@ -87,12 +89,12 @@ export interface IParsedPeriod {
   end? : number; // end time at which the Period ends, in seconds.
                  // `undefined` if the Period is the last one and is still
                  // being updated
-  variants : IParsedVariant[]; // Every tracks that can be played together
 }
 
 export interface IParsedVariantTypedSet {
-  adaptation : IParsedAdaptation;
-  representation : IParsedRepresentation;
+  adaptation : IParsedAdaptation; // The "track" from this set
+  representation : IParsedRepresentation; // The quality linked to the track of
+                                          // this set
 }
 
 export interface IParsedVariant {
