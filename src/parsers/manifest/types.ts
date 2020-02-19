@@ -87,6 +87,22 @@ export interface IParsedPeriod {
   end? : number; // end time at which the Period ends, in seconds.
                  // `undefined` if the Period is the last one and is still
                  // being updated
+  variants : IParsedVariant[]; // Every tracks that can be played together
+}
+
+export interface IParsedVariantTypedSet {
+  adaptation : IParsedAdaptation;
+  representation : IParsedRepresentation;
+}
+
+export interface IParsedVariant {
+  video : IParsedVariantTypedSet |
+          null;
+  audio : IParsedVariantTypedSet |
+          null;
+  text : IParsedVariantTypedSet |
+          null;
+  bitrate : number;
 }
 
 // Representation of the whole Manifest file
