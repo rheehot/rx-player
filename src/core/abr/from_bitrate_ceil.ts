@@ -28,7 +28,8 @@ export default function fromBitrateCeil(
 ) : Representation|undefined {
   const tooHighIndex : number = arrayFindIndex(
     representations,
-    (representation) => representation.bitrate > bitrate
+    (representation) => representation.bitrate !== undefined &&
+                        representation.bitrate > bitrate
   );
   if (tooHighIndex === -1) {
     return representations[representations.length - 1];

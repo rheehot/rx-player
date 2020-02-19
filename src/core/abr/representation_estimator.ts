@@ -292,7 +292,12 @@ export default function RepresentationEstimator({
         })
       );
 
-      const bitrates = representations.map(r => r.bitrate);
+      const bitrates = representations.reduce<number[]>((acc, rep) => {
+        if (rep.bitrate !== undefined) {
+          acc.push(rep.bitrate);
+        }
+        return acc;
+      }, []);
       const bufferBasedEstimation$ = BufferBasedChooser(bufferBasedClock$, bitrates)
         .pipe(startWith(undefined));
 
@@ -318,7 +323,8 @@ export default function RepresentationEstimator({
           lastEstimatedBitrate = bandwidthEstimate;
 
           const stableRepresentation = scoreCalculator.getLastStableRepresentation();
-          const knownStableBitrate = stableRepresentation == null ?
+          const knownStableBitrate = stableRepresentation === null ||
+                                     stableRepresentation.bitrate === undefined ?
             undefined :
             stableRepresentation.bitrate / (clock.speed > 0 ? clock.speed : 1);
 
@@ -356,6 +362,7 @@ export default function RepresentationEstimator({
                      knownStableBitrate };
           }
           if (bufferBasedBitrate == null ||
+              chosenRepFromBandwidth.bitrate === undefined ||
               chosenRepFromBandwidth.bitrate >= bufferBasedBitrate)
           {
             log.debug("ABR: Choosing representation with bandwith estimation.",

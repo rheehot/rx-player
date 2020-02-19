@@ -41,7 +41,7 @@ class Representation {
   public index : IRepresentationIndex;
 
   // Bitrate this Representation is in, in bits per seconds.
-  public bitrate : number;
+  public bitrate : number | undefined;
 
   // Frame-rate, when it can be applied, of this Representation, in any textual
   // indication possible (often under a ratio form).

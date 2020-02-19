@@ -30,11 +30,11 @@ export interface IContentProtections {
 // Representation of a "quality" available in any Adaptation
 export interface IParsedRepresentation {
   // required
-  bitrate : number;
   index : IRepresentationIndex;
   id: string;
 
   // optional
+  bitrate? : number;
   codecs?: string;
   contentProtections? : IContentProtections;
   frameRate?: string;

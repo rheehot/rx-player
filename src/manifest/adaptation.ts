@@ -145,8 +145,10 @@ export default class Adaptation {
 
     this.representations = argsRepresentations
       .map(representation => new Representation(representation))
-      .sort((a, b) => a.bitrate - b.bitrate)
-      .filter(representation => {
+      .sort((a, b) => a.bitrate === undefined ? -1 :
+                      b.bitrate === undefined ? 1 :
+                                                a.bitrate - b.bitrate)
+      .filter((representation : Representation) => {
         if (representationFilter == null) {
           return true;
         }
@@ -171,7 +173,9 @@ export default class Adaptation {
     const bitrates : number[] = [];
     for (let i = 0; i < this.representations.length; i ++) {
       const representation = this.representations[i];
-      if (representation.decipherable !== false) {
+      if (representation.decipherable !== false &&
+          representation.bitrate !== undefined)
+      {
         bitrates.push(representation.bitrate);
       }
     }

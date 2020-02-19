@@ -29,7 +29,8 @@ export default function filterByBitrate(
 ) : Representation[] {
   const firstSuperiorBitrate = arrayFindIndex(
     representations,
-    (representation) => representation.bitrate > bitrate
+    (representation) => representation.bitrate !== undefined &&
+                        representation.bitrate > bitrate
   );
 
   if (firstSuperiorBitrate === -1) {

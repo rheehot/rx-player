@@ -187,6 +187,11 @@ function shouldContentBeReplaced(
   }
 
   const oldContentBitrate = oldContent.representation.bitrate;
+  if (oldContentBitrate === undefined ||
+      currentContent.representation.bitrate === undefined)
+  {
+    return false;
+  }
   if (knownStableBitrate === undefined) {
     // only re-load comparatively-poor bitrates for the same Adaptation.
     const bitrateCeil = oldContentBitrate * BITRATE_REBUFFERING_RATIO;

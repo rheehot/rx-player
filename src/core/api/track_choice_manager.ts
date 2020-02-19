@@ -59,7 +59,7 @@ export interface ITMTextTrack { language : string;
                                 id : number|string; }
 
 interface ITMVideoRepresentation { id : string|number;
-                                   bitrate : number;
+                                   bitrate? : number;
                                    width? : number;
                                    height? : number;
                                    codec? : string;

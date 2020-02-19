@@ -233,7 +233,10 @@ describe("Manifest - Adaptation", () => {
       representation : Representation,
       adaptationInfos : IRepresentationInfos
     ) => {
-      if (adaptationInfos.language === "fr" && representation.bitrate < 40) {
+      if (adaptationInfos.language === "fr" &&
+          representation.bitrate !== undefined &&
+          representation.bitrate < 40)
+      {
         return false;
       }
       return true;
