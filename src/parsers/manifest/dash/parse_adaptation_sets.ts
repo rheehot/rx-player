@@ -268,13 +268,15 @@ export default function parseAdaptationSets(
                                 accessibility != null &&
                                 isHardOfHearing(accessibility) ? true :
                                                                  undefined;
-        const isAudioDescription =
-          type === "audio" &&
-          adaptation.children.accessibility !== undefined &&
-          isVisuallyImpaired(adaptation.children.accessibility) ? true : undefined;
-        const adaptationID = newID = getAdaptationID(adaptation, representations,
+        const isAudioDescription = type === "audio" &&
+                                   adaptation.children.accessibility !== undefined &&
+                                   isVisuallyImpaired(accessibility) ? true :
+                                                                       undefined;
+        const adaptationID = newID = getAdaptationID(adaptation,
+                                                     representations,
                                                      { isClosedCaption,
-                                                      isAudioDescription, type });
+                                                       isAudioDescription,
+                                                       type });
         const parsedAdaptationSet : IParsedAdaptation =
           { id: (isTrickModeFor != null ? "trickmode-" : "") + adaptationID,
           representations,
