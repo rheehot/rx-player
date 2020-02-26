@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import objectAssign from "object-assign";
 import { ICustomError } from "../../../errors";
 import {
   IBaseContentInfos,
   IRepresentationIndex,
   ISegment,
 } from "../../../manifest";
+import objectAssign from "../../../utils/object_assign";
 
 /**
  * The MetaRepresentationIndex is wrapper for all kind of indexes (dash, smooth, etc)
@@ -118,6 +118,13 @@ export default class MetaRepresentationIndex implements IRepresentationIndex {
 
   public isFinished() : boolean {
     return this._wrappedIndex.isFinished();
+  }
+
+  public _replace(newIndex : IRepresentationIndex): void {
+    if (!(newIndex instanceof MetaRepresentationIndex)) {
+      throw new Error("A MetaPlaylist can only be replaced with another MetaPlaylist");
+    }
+    this._wrappedIndex._replace(newIndex._wrappedIndex);
   }
 
   public _update(newIndex : IRepresentationIndex): void {

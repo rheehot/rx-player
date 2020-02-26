@@ -19,7 +19,6 @@
  * throw if something is wrong, and return a normalized option object.
  */
 
-import objectAssign from "object-assign";
 import config from "../../config";
 import log from "../../log";
 import { IRepresentationFilter } from "../../manifest";
@@ -32,6 +31,7 @@ import {
   normalizeAudioTrack,
   normalizeTextTrack,
 } from "../../utils/languages";
+import objectAssign from "../../utils/object_assign";
 import warnOnce from "../../utils/warn_once";
 import { IKeySystemOption } from "../eme";
 import {
@@ -61,6 +61,7 @@ interface IServerSyncInfos { serverTimestamp : number;
 export interface ITransportOptions { aggressiveMode? : boolean;
                                      checkMediaSegmentIntegrity? : boolean;
                                      manifestLoader? : CustomManifestLoader;
+                                     manifestUpdateUrl? : string;
                                      minimumManifestUpdateInterval? : number;
                                      segmentLoader? : CustomSegmentLoader;
                                      representationFilter? : IRepresentationFilter;
@@ -164,6 +165,7 @@ interface IParsedLoadVideoOptionsBase {
   autoPlay : boolean;
   keySystems : IKeySystemOption[];
   lowLatencyMode : boolean;
+  manifestUpdateUrl : string | undefined;
   minimumManifestUpdateInterval : number;
   networkConfig: INetworkConfigOption;
   transportOptions : IParsedTransportOptions;
@@ -533,11 +535,9 @@ function parseLoadVideoOptions(
     }
   }
 
+  const manifestUpdateUrl = options.transportOptions?.manifestUpdateUrl;
   const minimumManifestUpdateInterval =
-    options.transportOptions !== undefined &&
-    options.transportOptions.minimumManifestUpdateInterval !== undefined ?
-      options.transportOptions.minimumManifestUpdateInterval :
-      0;
+    options.transportOptions?.minimumManifestUpdateInterval ?? 0;
 
   const networkConfig = options.networkConfig == null ?
     {} :
@@ -554,6 +554,7 @@ function parseLoadVideoOptions(
            keySystems,
            lowLatencyMode,
            manualBitrateSwitchingMode,
+           manifestUpdateUrl,
            minimumManifestUpdateInterval,
            networkConfig,
            startAt,
