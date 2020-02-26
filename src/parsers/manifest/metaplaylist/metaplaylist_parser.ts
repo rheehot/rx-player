@@ -273,7 +273,6 @@ function createManifest(
     periods.push(...manifestPeriods);
   }
 
-
   const { overlays } = mplData;
   if (overlays != null && overlays.length > 0) {
     for (let i = 0; i < periods.length; i++) {
