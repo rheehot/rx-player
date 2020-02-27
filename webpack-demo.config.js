@@ -33,17 +33,25 @@ module.exports = {
     rules: [
       {
         test: /\.jsx?$/,
+        exclude: /(node_modules|bower_components)/,
         use: {
-          loader: "babel-loader",
-          options: {
-            cacheDirectory: true,
-            presets: [
-              "@babel/react",
-              ["@babel/env", { loose: true, modules: false }],
-            ],
-          },
+          // `.swcrc` can be used to configure swc
+          loader: "swc-loader",
         },
       },
+      // {
+      //   test: /\.jsx?$/,
+      //   use: {
+      //     loader: "babel-loader",
+      //     options: {
+      //       cacheDirectory: true,
+      //       presets: [
+      //         "@babel/react",
+      //         ["@babel/env", { loose: true, modules: false }],
+      //       ],
+      //     },
+      //   },
+      // },
       {
         test: /\.css$/,
         use: [
