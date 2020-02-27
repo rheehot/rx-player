@@ -1,8 +1,21 @@
-{
-  "jsc": {
-    "parser": {
-      "syntax": "ecmascript",
-      "jsx": true
+[
+  {
+    "test": ".*.jsx?$",
+    "jsc": {
+      "parser": {
+        "syntax": "ecmascript",
+        "jsx": true
+      }
+    }
+  },
+  {
+    "test": ".*.ts$",
+    "jsc": {
+      "parser": {
+        "syntax": "typescript",
+        "tsx": false,
+        "dynamicImport": false
+      }
     }
   }
-}
+]

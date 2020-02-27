@@ -131,6 +131,11 @@ module.exports = {
   },
   module: {
     rules: [
+      // {
+      //   test: /\.tsx?$/,
+      //   exclude: /node_modules/,
+      //   use: { loader: "swc-loader" },
+      // },
       {
         test: /\.tsx?$/,
         exclude: /node_modules/,

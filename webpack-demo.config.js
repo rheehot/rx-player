@@ -33,9 +33,8 @@ module.exports = {
     rules: [
       {
         test: /\.jsx?$/,
-        exclude: /(node_modules|bower_components)/,
+        exclude: /node_modules/,
         use: {
-          // `.swcrc` can be used to configure swc
           loader: "swc-loader",
         },
       },
