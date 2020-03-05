@@ -71,7 +71,7 @@ interface IAdaptationSwitchingInfos  {
 function isVisuallyImpaired(
   accessibility? : { schemeIdUri? : string; value? : string }
 ) : boolean {
-  if (accessibility == null) {
+  if (accessibility === undefined) {
     return false;
   }
 
@@ -89,7 +89,7 @@ function isVisuallyImpaired(
 function isHardOfHearing(
   accessibility? : { schemeIdUri? : string; value? : string }
 ) : boolean {
-  if (accessibility == null) {
+  if (accessibility === undefined) {
     return false;
   }
 
@@ -107,7 +107,8 @@ function isHardOfHearing(
 function getAdaptationID(
   adaptation : IAdaptationSetIntermediateRepresentation,
   representations : IParsedRepresentation[],
-  infos : { isClosedCaption? : boolean; isAudioDescription? : boolean; type : string }
+  infos : { isClosedCaption? : boolean; isAudioDescription? : boolean; type : string },
+  isTrickModeTrack: boolean
 ) : string {
   if (isNonEmptyString(adaptation.attributes.id)) {
     return adaptation.attributes.id;
@@ -139,7 +140,7 @@ function getAdaptationID(
     idString += representations.length > 0 ?
       ("-" + representations[0].id) : "-empty";
   }
-  return "adaptation-" + idString;
+  return  (isTrickModeTrack ? "trickmode-" : "") + "adaptation-" + idString;
 }
 
 /**
@@ -150,14 +151,14 @@ function getAdaptationID(
 function getAdaptationSetSwitchingIDs(
   adaptation : IAdaptationSetIntermediateRepresentation
 ) : string[] {
-  if (adaptation.children.supplementalProperties != null) {
+  if (adaptation.children.supplementalProperties !== undefined) {
     const { supplementalProperties } = adaptation.children;
     for (let j = 0; j < supplementalProperties.length; j++) {
       const supplementalProperty = supplementalProperties[j];
       if (
         supplementalProperty.schemeIdUri ===
         "urn:mpeg:dash:adaptation-set-switching:2016" &&
-        supplementalProperty.value != null
+        supplementalProperty.value !== undefined
       ) {
         return supplementalProperty.value.split(",")
           .map(id => id.trim())
@@ -178,13 +179,11 @@ export default function parseAdaptationSets(
   adaptationsIR : IAdaptationSetIntermediateRepresentation[],
   periodInfos : IPeriodInfos
 ): IParsedAdaptations {
-  const { adaptations, pendingTrickModeAdaptations } = adaptationsIR
+  const { adaptations, trickModeAdaptations } = adaptationsIR
     .reduce<{
       adaptations : IParsedAdaptations;
-      pendingTrickModeAdaptations: Array<{
-        adaptation: IParsedAdaptation;
-        isTrickModeFor: string;
-      }>;
+      trickModeAdaptations: Array<{ adaptation: IParsedAdaptation;
+                                    trickModeAttachedAdaptationIds: string[]; }>;
       adaptationSwitchingInfos : IAdaptationSwitchingInfos;
       videoMainAdaptation : IParsedAdaptation|null;
     }>((acc, adaptation) => {
@@ -222,7 +221,8 @@ export default function parseAdaptationSets(
           }
         ) : undefined;
 
-      const isTrickModeFor = trickModeProperty?.value;
+      const trickModeAttachedAdaptationIds: string[]|undefined =
+        trickModeProperty?.value?.split(" ");
 
       const adaptationMimeType = adaptation.attributes.mimeType;
       const adaptationCodecs = adaptation.attributes.codecs;
@@ -233,7 +233,7 @@ export default function parseAdaptationSets(
                                        isNonEmptyString(adaptationCodecs) ?
                                          adaptationCodecs :
                                          null,
-                                       adaptationChildren.roles != null ?
+                                       adaptationChildren.roles !== undefined ?
                                          adaptationChildren.roles :
                                          null);
       if (type === undefined) {
@@ -250,7 +250,7 @@ export default function parseAdaptationSets(
       if (type === "video" &&
           videoMainAdaptation !== null &&
           isMainAdaptation &&
-          isTrickModeFor == null
+          trickModeAttachedAdaptationIds === undefined
       ) {
         videoMainAdaptation.representations.push(...representations);
         newID = videoMainAdaptation.id;
@@ -265,59 +265,45 @@ export default function parseAdaptationSets(
         }
 
         const isClosedCaption = type === "text" &&
-                                accessibility != null &&
+                                accessibility !== undefined &&
                                 isHardOfHearing(accessibility) ? true :
                                                                  undefined;
         const isAudioDescription = type === "audio" &&
-                                   adaptation.children.accessibility !== undefined &&
+                                   accessibility !== undefined &&
                                    isVisuallyImpaired(accessibility) ? true :
                                                                        undefined;
+
+        const isTrickModeTrack = trickModeAttachedAdaptationIds !== undefined;
         const adaptationID = newID = getAdaptationID(adaptation,
                                                      representations,
                                                      { isClosedCaption,
                                                        isAudioDescription,
-                                                       type });
-        const parsedAdaptationSet : IParsedAdaptation =
-          { id: (isTrickModeFor != null ? "trickmode-" : "") + adaptationID,
-          representations,
-          type };
-        if (adaptation.attributes.language != null) {
+                                                       type },
+                                                       isTrickModeTrack);
+        const parsedAdaptationSet : IParsedAdaptation = { id: adaptationID,
+                                                          representations,
+                                                          type };
+        if (adaptation.attributes.language !== undefined) {
           parsedAdaptationSet.language = adaptation.attributes.language;
         }
-        if (isClosedCaption != null) {
+        if (isClosedCaption !== undefined) {
           parsedAdaptationSet.closedCaption = isClosedCaption;
         }
-        if (isAudioDescription != null) {
+        if (isAudioDescription !== undefined) {
           parsedAdaptationSet.audioDescription = isAudioDescription;
         }
         if (isDub === true) {
           parsedAdaptationSet.isDub = true;
         }
 
-        const adaptationsOfTheSameType = parsedAdaptations[type];
-        if (isTrickModeFor != null) {
-          if (adaptationsOfTheSameType !== undefined) {
-            const concernedAdaptation = arrayFind(adaptationsOfTheSameType, (a) => {
-              return a.id === isTrickModeFor;
-            });
-            if (concernedAdaptation !== undefined) {
-              concernedAdaptation.trickModeTrack = parsedAdaptationSet;
-            } else {
-              acc.pendingTrickModeAdaptations.push({
-                adaptation: parsedAdaptationSet,
-                isTrickModeFor,
-              });
-            }
-          } else {
-            acc.pendingTrickModeAdaptations.push({
-              adaptation: parsedAdaptationSet,
-              isTrickModeFor,
-            });
-          }
+        if (trickModeAttachedAdaptationIds !== undefined) {
+          acc.trickModeAdaptations.push({ adaptation: parsedAdaptationSet,
+                                          trickModeAttachedAdaptationIds });
         } else {
+          const adaptationsOfTheSameType = parsedAdaptations[type];
           if (adaptationsOfTheSameType === undefined) {
             parsedAdaptations[type] = [parsedAdaptationSet];
-            if (isMainAdaptation && type === "video" && isTrickModeFor == null) {
+            if (isMainAdaptation && type === "video") {
               acc.videoMainAdaptation = parsedAdaptationSet;
             }
           } else {
@@ -328,13 +314,13 @@ export default function parseAdaptationSets(
               const id : string = adaptationSetSwitchingIDs[k];
               const switchingInfos = acc.adaptationSwitchingInfos[id];
               if (
-                switchingInfos != null && switchingInfos.newID !== newID &&
+                switchingInfos !== undefined && switchingInfos.newID !== newID &&
                 arrayIncludes(switchingInfos.adaptationSetSwitchingIDs, originalID)
               ) {
                 const adaptationToMergeInto =
                   arrayFind(adaptationsOfTheSameType, (a) => a.id === id);
                 if (
-                  adaptationToMergeInto != null &&
+                  adaptationToMergeInto !== undefined &&
                   adaptationToMergeInto.audioDescription ===
                     parsedAdaptationSet.audioDescription &&
                   adaptationToMergeInto.closedCaption ===
@@ -350,8 +336,8 @@ export default function parseAdaptationSets(
               }
             }
 
-            if (isMainAdaptation && type === "video" && isTrickModeFor == null) {
-              if (mergedInto == null) {
+            if (isMainAdaptation && type === "video") {
+              if (mergedInto === null) {
                 // put "main" adaptation as the first
                 adaptationsOfTheSameType.unshift(parsedAdaptationSet);
                 acc.videoMainAdaptation = parsedAdaptationSet;
@@ -373,24 +359,23 @@ export default function parseAdaptationSets(
         }
       }
 
-      if (originalID != null && acc.adaptationSwitchingInfos[originalID] == null) {
+      if (originalID !== undefined &&
+          acc.adaptationSwitchingInfos[originalID] === undefined) {
         acc.adaptationSwitchingInfos[originalID] = { newID, adaptationSetSwitchingIDs };
       }
 
       return { adaptations: parsedAdaptations,
-               pendingTrickModeAdaptations: acc.pendingTrickModeAdaptations,
+               trickModeAdaptations: acc.trickModeAdaptations,
                adaptationSwitchingInfos: acc.adaptationSwitchingInfos,
                videoMainAdaptation: acc.videoMainAdaptation };
     }, {
       adaptations: {},
-      pendingTrickModeAdaptations: [] as Array<{
-        adaptation: IParsedAdaptation;
-        isTrickModeFor: string;
-      }>,
+      trickModeAdaptations: [] as Array<{ adaptation: IParsedAdaptation;
+                                          trickModeAttachedAdaptationIds: string[]; }>,
       videoMainAdaptation: null,
       adaptationSwitchingInfos: {},
     });
 
-  attachTrickModeTrack(adaptations, pendingTrickModeAdaptations);
+  attachTrickModeTrack(adaptations, trickModeAdaptations);
   return adaptations;
 }

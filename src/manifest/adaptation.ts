@@ -94,7 +94,7 @@ export default class Adaptation {
   // created, in the order they have happened.
   public readonly parsingErrors : ICustomError[];
 
-  public readonly trickModeTrack? : Adaptation;
+  public readonly trickModeTracks? : Adaptation[];
 
   /**
    * @constructor
@@ -105,7 +105,7 @@ export default class Adaptation {
     representationFilter? : IRepresentationFilter;
     isManuallyAdded? : boolean;
   } = {}) {
-    const { trickModeTrack } = parsedAdaptation;
+    const { trickModeTracks } = parsedAdaptation;
     const { representationFilter, isManuallyAdded } = options;
     this.parsingErrors = [];
     this.id = parsedAdaptation.id;
@@ -145,9 +145,9 @@ export default class Adaptation {
       this.isDub = parsedAdaptation.isDub;
     }
 
-    if (trickModeTrack !== undefined) {
-      this.trickModeTrack = new Adaptation(trickModeTrack);
-    }
+    this.trickModeTracks = trickModeTracks !== undefined ?
+      [...trickModeTracks.map((track) => new Adaptation(track))] :
+      undefined;
 
     this.representations = argsRepresentations
       .map(representation => new Representation(representation))
