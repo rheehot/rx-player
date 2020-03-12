@@ -35,7 +35,7 @@ import { EncryptedMediaError } from "../../errors";
 import log from "../../log";
 import arrayIncludes from "../../utils/array_includes";
 import flatMap from "../../utils/flat_map";
-import MediaKeysInfosStore from "./media_keys_infos_store";
+import MediaKeysSetter from "./media_keys_setter";
 import { IKeySystemOption } from "./types";
 
 type MediaKeysRequirement = "optional" |
@@ -258,7 +258,7 @@ export default function getMediaKeySystemAccess(
   keySystemsConfigs: IKeySystemOption[]
 ) : Observable<IFoundMediaKeySystemAccessEvent> {
   return observableDefer<Observable<IFoundMediaKeySystemAccessEvent>>(() => {
-    const currentState = MediaKeysInfosStore.getState(mediaElement);
+    const currentState = MediaKeysSetter.getLastSetInfos(mediaElement);
     if (currentState != null) {
       // Fast way to find a compatible keySystem if the currently loaded
       // one as exactly the same compatibility options.

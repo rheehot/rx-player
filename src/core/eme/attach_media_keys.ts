@@ -17,12 +17,9 @@
 import {
   defer as observableDefer,
   Observable,
-  of as observableOf,
 } from "rxjs";
-import { mergeMap } from "rxjs/operators";
-import { setMediaKeys } from "../../compat";
 import log from "../../log";
-import MediaKeysInfosStore from "./media_keys_infos_store";
+import MediaKeysSetter from "./media_keys_setter";
 import { IMediaKeysInfos } from "./types";
 
 /**
@@ -31,7 +28,7 @@ import { IMediaKeysInfos } from "./types";
  * If a MediaKeys was already set on it, dispose of it before setting the new
  * one.
  *
- * /!\ Mutates heavily MediaKeysInfosStore
+ * /!\ Mutates heavily MediaKeysSetter
  * @param {Object} mediaKeysInfos
  * @param {HTMLMediaElement} mediaElement
  * @returns {Observable}
@@ -46,24 +43,11 @@ export default function attachMediaKeys(
             mediaKeys,
             sessionsStore } = mediaKeysInfos;
 
-    const previousState = MediaKeysInfosStore.getState(mediaElement);
-    MediaKeysInfosStore.setState(mediaElement,
-                                 { keySystemOptions,
-                                   mediaKeySystemAccess,
-                                   mediaKeys,
-                                   sessionsStore });
-
-    return (previousState != null &&
-            previousState.sessionsStore !== sessionsStore ?
-              previousState.sessionsStore.closeAllSessions() :
-              observableOf(null)
-    ).pipe(mergeMap(() => {
-      if (mediaElement.mediaKeys === mediaKeys) {
-        return observableOf(null);
-      }
-
-      log.debug("EME: Setting MediaKeys");
-      return setMediaKeys(mediaElement, mediaKeys);
-    }));
+    log.debug("EME: Setting MediaKeys");
+    return MediaKeysSetter.setMediaKeys(mediaElement,
+                                        { keySystemOptions,
+                                          mediaKeySystemAccess,
+                                          mediaKeys,
+                                          sessionsStore });
   });
 }

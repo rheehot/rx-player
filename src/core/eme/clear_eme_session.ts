@@ -22,7 +22,7 @@ import {
 import { ignoreElements } from "rxjs/operators";
 import { shouldUnsetMediaKeys } from "../../compat/";
 import disposeMediaKeys from "./dispose_media_keys";
-import MediaKeysInfosStore from "./media_keys_infos_store";
+import MediaKeysSetter from "./media_keys_setter";
 
 /**
  * Clear EME ressources that should be cleared when the current content stops
@@ -39,8 +39,8 @@ export default function clearEMESession(
         .pipe(ignoreElements());
     }
 
-    const currentState = MediaKeysInfosStore.getState(mediaElement);
-    if (currentState != null &&
+    const currentState = MediaKeysSetter.getLastSetInfos(mediaElement);
+    if (currentState !== null &&
         currentState.keySystemOptions.closeSessionsOnStop === true)
     {
       return currentState.sessionsStore.closeAllSessions()

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import MediaKeysInfosStore from "./media_keys_infos_store";
+import MediaKeysSetter from "./media_keys_setter";
 
 /**
  * Returns the name of the current key system used.
@@ -24,7 +24,7 @@ import MediaKeysInfosStore from "./media_keys_infos_store";
 export default function getCurrentKeySystem(
   mediaElement : HTMLMediaElement
 ) : string | null {
-  const currentState = MediaKeysInfosStore.getState(mediaElement);
+  const currentState = MediaKeysSetter.getLastSetInfos(mediaElement);
   return currentState == null ? null :
                                 currentState.keySystemOptions.type;
 }

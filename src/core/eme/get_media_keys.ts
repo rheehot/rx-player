@@ -30,7 +30,7 @@ import log from "../../log";
 import castToObservable from "../../utils/cast_to_observable";
 import tryCatch from "../../utils/rx-try_catch";
 import getMediaKeySystemAccess from "./find_key_system";
-import MediaKeysInfosStore from "./media_keys_infos_store";
+import MediaKeysSetter from "./media_keys_setter";
 import {
   IKeySystemOption,
   IMediaKeysInfos,
@@ -73,7 +73,7 @@ export default function getMediaKeysInfos(
                                    keySystemsConfigs
     ).pipe(mergeMap((evt) => {
       const { options, mediaKeySystemAccess } = evt.value;
-      const currentState = MediaKeysInfosStore.getState(mediaElement);
+      const currentState = MediaKeysSetter.getLastSetInfos(mediaElement);
       const sessionStorage = createSessionStorage(options);
 
       if (currentState != null && evt.type === "reuse-media-key-system-access") {

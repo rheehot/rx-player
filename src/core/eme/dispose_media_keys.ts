@@ -17,12 +17,9 @@
 import {
   defer as observableDefer,
   Observable,
-  of as observableOf,
 } from "rxjs";
-import { mergeMapTo } from "rxjs/operators";
-import { setMediaKeys } from "../../compat";
 import log from "../../log";
-import MediaKeysInfosStore from "./media_keys_infos_store";
+import MediaKeysSetter from "./media_keys_setter";
 
 /**
  * @param {Object} mediaKeysInfos
@@ -32,15 +29,7 @@ export default function disposeMediaKeys(
   mediaElement : HTMLMediaElement
 ) : Observable<unknown> {
   return observableDefer(() => {
-    const currentState = MediaKeysInfosStore.getState(mediaElement);
-    if (currentState === null) {
-      return observableOf(null);
-    }
-
     log.debug("EME: Disposing of the current MediaKeys");
-    const { sessionsStore } = currentState;
-    MediaKeysInfosStore.clearState(mediaElement);
-    return sessionsStore.closeAllSessions()
-      .pipe(mergeMapTo(setMediaKeys(mediaElement, null)));
+    return MediaKeysSetter.detachMediaKeys(mediaElement);
   });
 }
