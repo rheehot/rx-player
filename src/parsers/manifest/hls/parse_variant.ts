@@ -110,6 +110,7 @@ export default function parseVariant(
                                              segments });
 
   return { id: wantedID,
+           isFetched: true, // XXX TODO
            bitrate: variant.bandwidth, // XXX TODO
            index,
            codecs: codecsPerType.video,

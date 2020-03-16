@@ -198,21 +198,26 @@ function createManifest(
             const representations : any[] = [];
             for (let iRep = 0; iRep < currentAdaptation.representations.length; iRep++) {
               const currentRepresentation = currentAdaptation.representations[iRep];
+              let index : MetaRepresentationIndex | undefined;
 
-              const contentInfos = {
-                manifest: currentManifest,
-                period: currentPeriod,
-                adaptation: currentAdaptation,
-                representation: currentRepresentation,
-              };
+              // XXX TODO
+              if (currentRepresentation.isFetched()) {
+                const contentInfos = {
+                  manifest: currentManifest,
+                  period: currentPeriod,
+                  adaptation: currentAdaptation,
+                  representation: currentRepresentation,
+                };
 
-              const newIndex = new MetaRepresentationIndex(currentRepresentation.index,
-                                                           [contentOffset, contentEnd],
-                                                           content.transport,
-                                                           contentInfos);
+                index = new MetaRepresentationIndex(currentRepresentation.index,
+                                                             [contentOffset, contentEnd],
+                                                             content.transport,
+                                                             contentInfos);
+              }
               representations.push({
                 bitrate: currentRepresentation.bitrate,
-                index: newIndex,
+                isFetched: index !== undefined,
+                index,
                 id: currentRepresentation.id,
                 height: currentRepresentation.height,
                 width: currentRepresentation.width,
@@ -252,6 +257,7 @@ function createManifest(
           representations: [
             { bitrate: 0,
               id: representationID,
+              isFetched: true,
               mimeType: track.mimeType,
               codecs: track.codecs,
               index: new StaticRepresentationIndex({ media: track.url }),

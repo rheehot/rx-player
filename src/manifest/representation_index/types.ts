@@ -17,8 +17,8 @@
 import { ICustomError } from "../../errors";
 import Manifest, {
   Adaptation,
+  IFetchedRepresentation,
   Period,
-  Representation,
 } from "../../manifest";
 import {
   ILocalIndexSegment,
@@ -43,7 +43,7 @@ export interface ISmoothInitSegmentPrivateInfos { codecPrivateData? : string;
 export interface IBaseContentInfos { manifest: Manifest;
                                      period: Period;
                                      adaptation: Adaptation;
-                                     representation: Representation; }
+                                     representation: IFetchedRepresentation; }
 
 export interface IMetaPlaylistPrivateInfos { transportType : string;
                                              baseContent : IBaseContentInfos;

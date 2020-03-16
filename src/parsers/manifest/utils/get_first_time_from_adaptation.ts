@@ -27,12 +27,16 @@ import { IParsedAdaptation } from "../types";
  * @returns {Number|undefined}
  */
 export default function getFirstPositionFromAdaptation(
-  adaptation: IParsedAdaptation
+  adaptation : IParsedAdaptation
 ) : number | undefined | null {
   const { representations } = adaptation;
   let max : null | number = null;
   for (let i = 0; i < representations.length; i++) {
-    const firstPosition = representations[i].index.getFirstPosition();
+    const representation = representations[i];
+    if (representation.isFetched === false) {
+      return undefined;
+    }
+    const firstPosition = representation.index.getFirstPosition();
     if (firstPosition === undefined) { // we cannot tell
       return undefined;
     }

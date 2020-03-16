@@ -27,10 +27,10 @@ import {
 import features from "../../features";
 import Manifest, {
   Adaptation,
+  IFetchedRepresentation,
   IMetaPlaylistPrivateInfos,
   ISegment,
   Period,
-  Representation,
 } from "../../manifest";
 import parseMetaPlaylist, {
   IParserResponse as IMPLParserResponse,
@@ -66,7 +66,7 @@ function getContent(
 ) : { manifest : Manifest;
       period : Period;
       adaptation : Adaptation;
-      representation : Representation;
+      representation : IFetchedRepresentation;
       segment : ISegment; }
 {
   if (segment.privateInfos?.metaplaylistInfos === undefined) {

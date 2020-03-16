@@ -239,6 +239,9 @@ function getMaximumLastPosition(
     const representations = allAdaptations[adapIndex].representations;
     for (let repIndex = 0; repIndex < representations.length; repIndex++) {
       const representation = representations[repIndex];
+      if (representation.isFetched === false) {
+        throw new Error("Every DASH Representation should be fetched at parsing time.");
+      }
       const position = representation.index.getLastPosition();
       if (position !== null) {
         allIndexAreEmpty = false;

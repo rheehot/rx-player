@@ -264,9 +264,13 @@ function createNativeSourceBuffersForPeriod(
       const representations = adaptations != null &&
                               adaptations.length > 0 ? adaptations[0].representations :
                                                        [];
+
+      // XXX TODO
       if (representations.length > 0) {
         const codec = representations[0].getMimeTypeString();
-        sourceBuffersStore.createSourceBuffer(bufferType, codec);
+        if (codec !== undefined) {
+          sourceBuffersStore.createSourceBuffer(bufferType, codec);
+        }
       }
     }
   });

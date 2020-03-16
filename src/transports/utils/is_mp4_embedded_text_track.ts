@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Representation } from "../../manifest";
+import { IFetchedRepresentation } from "../../manifest";
 
 /**
  * Returns true if the given texttrack segment represents a textrack embedded
@@ -23,7 +23,7 @@ import { Representation } from "../../manifest";
  * @returns {Boolean}
  */
 export default function isMP4EmbeddedTextTrack(
-  representation : Representation
+  representation : IFetchedRepresentation
 ) : boolean {
   return representation.mimeType === "application/mp4";
 }

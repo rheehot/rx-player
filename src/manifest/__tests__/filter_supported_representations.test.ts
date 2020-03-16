@@ -15,6 +15,7 @@
  */
 
 /* tslint:disable no-unsafe-any */
+// XXX TODO
 describe("Manifest - filterSupportedRepresentations", () => {
   beforeEach(() => {
     jest.resetModules();
@@ -27,8 +28,8 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100 };
-    const rep2 = { id: "55", bitrate: 101 };
+    const rep1 = { id: "54", isFetched: true, bitrate: 100 };
+    const rep2 = { id: "55", isFetched: true, bitrate: 101 };
     expect(filterSupportedRepresentations("text", [rep1, rep2]))
       .toEqual([rep1, rep2]);
 
@@ -42,8 +43,8 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100 };
-    const rep2 = { id: "55", bitrate: 101 };
+    const rep1 = { id: "54", isFetched: true, bitrate: 100 };
+    const rep2 = { id: "55", isFetched: true, bitrate: 101 };
     expect(filterSupportedRepresentations("image", [rep1, rep2]))
       .toEqual([rep1, rep2]);
 
@@ -57,8 +58,16 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100, mimeType: "video/mp4", codecs: "avc2" };
-    const rep2 = { id: "55", bitrate: 101, mimeType: "video/webm", codecs: "vp9" };
+    const rep1 = { id: "54",
+                   isFetched: true,
+                   bitrate: 100,
+                   mimeType: "video/mp4",
+                   codecs: "avc2" };
+    const rep2 = { id: "55",
+                   isFetched: true,
+                   bitrate: 101,
+                   mimeType: "video/webm",
+                   codecs: "vp9" };
     expect(filterSupportedRepresentations("video", [rep1, rep2]))
       .toEqual([rep2]);
 
@@ -74,8 +83,16 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100, mimeType: "audio/mp4", codecs: "aac" };
-    const rep2 = { id: "55", bitrate: 101, mimeType: "audio/webm", codecs: "ogg" };
+    const rep1 = { id: "54",
+                   isFetched: true,
+                   bitrate: 100,
+                   mimeType: "audio/mp4",
+                   codecs: "aac" };
+    const rep2 = { id: "55",
+                   isFetched: true,
+                   bitrate: 101,
+                   mimeType: "audio/webm",
+                   codecs: "ogg" };
     expect(filterSupportedRepresentations("video", [rep1, rep2]))
       .toEqual([rep1]);
 
@@ -91,8 +108,16 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100, mimeType: "audio/mp4", codecs: "aac" };
-    const rep2 = { id: "55", bitrate: 101, mimeType: "audio/webm", codecs: "ogg" };
+    const rep1 = { id: "54",
+                   isFetched: true,
+                   bitrate: 100,
+                   mimeType: "audio/mp4",
+                   codecs: "aac" };
+    const rep2 = { id: "55",
+                   isFetched: true,
+                   bitrate: 101,
+                   mimeType: "audio/webm",
+                   codecs: "ogg" };
     expect(filterSupportedRepresentations("video", [rep1, rep2]))
       .toEqual([rep1]);
 
@@ -108,9 +133,9 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100, mimeType: "video/mp4" };
-    const rep2 = { id: "55", bitrate: 101, codecs: "vp9" };
-    const rep3 = { id: "55", bitrate: 101 };
+    const rep1 = { id: "54", isFetched: true, bitrate: 100, mimeType: "video/mp4" };
+    const rep2 = { id: "55", isFetched: true, bitrate: 101, codecs: "vp9" };
+    const rep3 = { id: "55", isFetched: true, bitrate: 101 };
     filterSupportedRepresentations("video", [rep1, rep2, rep3]);
 
     expect(isCodecSupportedSpy).toHaveBeenCalledTimes(3);
@@ -126,9 +151,9 @@ describe("Manifest - filterSupportedRepresentations", () => {
     const filterSupportedRepresentations = require("../filter_supported_representations")
       .default;
 
-    const rep1 = { id: "54", bitrate: 100, mimeType: "audio/mp4" };
-    const rep2 = { id: "55", bitrate: 101, codecs: "ogg" };
-    const rep3 = { id: "55", bitrate: 101 };
+    const rep1 = { id: "54", isFetched: true, bitrate: 100, mimeType: "audio/mp4" };
+    const rep2 = { id: "55", isFetched: true, bitrate: 101, codecs: "ogg" };
+    const rep3 = { id: "55", isFetched: true, bitrate: 101 };
     filterSupportedRepresentations("audio", [rep1, rep2, rep3]);
 
     expect(isCodecSupportedSpy).toHaveBeenCalledTimes(3);

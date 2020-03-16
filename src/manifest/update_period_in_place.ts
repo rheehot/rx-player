@@ -58,11 +58,7 @@ export default function updatePeriodInPlace(oldPeriod : Period,
           log.warn(`Manifest: Representation "${oldRepresentations[k].id}" ` +
                    "not found when merging.");
         } else {
-          if (updateType === MANIFEST_UPDATE_TYPE.Full) {
-            oldRepresentation.index._replace(newRepresentation.index);
-          } else {
-            oldRepresentation.index._update(newRepresentation.index);
-          }
+          oldRepresentation.update(newRepresentation, updateType);
         }
       }
     }

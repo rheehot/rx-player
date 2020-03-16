@@ -17,56 +17,57 @@
 import log from "../log";
 import {
   IContentProtections,
+  IParsedPartialRepresentation,
   IParsedRepresentation,
 } from "../parsers/manifest";
 import areArraysOfNumbersEqual from "../utils/are_arrays_of_numbers_equal";
 import { concat } from "../utils/byte_parsing";
 import IRepresentationIndex from "./representation_index";
+import { MANIFEST_UPDATE_TYPE } from "./types";
 
 export interface IContentProtectionsInitDataObject {
   type : string;
   data : Uint8Array;
 }
 
-/**
- * Normalized Representation structure.
- * @class Representation
- */
-class Representation {
+// Representation that might not have been fetched yet
+export interface IPartialRepresentation {
   // ID uniquely identifying the Representation in the Adaptation.
-  // TODO unique for the whole manifest?
-  public readonly id : string|number;
+  readonly id : string;
+
+  // Possible URL at which the Representation can be fetched and refreshed
+  url? : string;
 
   // Interface allowing to request segments for specific times.
-  public index : IRepresentationIndex;
+  index? : IRepresentationIndex;
 
   // Bitrate this Representation is in, in bits per seconds.
-  public bitrate : number;
+  bitrate? : number;
 
   // Frame-rate, when it can be applied, of this Representation, in any textual
   // indication possible (often under a ratio form).
-  public frameRate? : string;
+  frameRate? : string;
 
   // A string describing the codec used for this Representation.
   // Examples: vp9, hvc, stpp
   // undefined if we do not know.
-  public codec? : string;
+  codec? : string;
 
   // A string describing the mime-type for this Representation.
   // Examples: audio/mp4, video/webm, application/mp4, text/plain
   // undefined if we do not know.
-  public mimeType? : string;
+  mimeType? : string;
 
   // If this Representation is linked to video content, this value is the width
   // in pixel of the corresponding video data.
-  public width? : number;
+  width? : number;
 
   // If this Representation is linked to video content, this value is the height
   // in pixel of the corresponding video data.
-  public height? : number;
+  height? : number;
 
   // DRM Information for this Representation.
-  public contentProtections? : IContentProtections;
+  contentProtections? : IContentProtections;
 
   // Whether we are able to decrypt this Representation / unable to decrypt it or
   // if we don't know yet:
@@ -75,15 +76,52 @@ class Representation {
   //   - if `false`, it means that we know we were unable to decrypt this
   //     Representation
   //   - if `undefined` there is no certainty on this matter
+  decipherable? : boolean;
+
+  // If `true`, we have a fetched and exploitable IRepresentation
+  isFetched() : boolean;
+
+  update(newRepresentation : Representation, updateType : MANIFEST_UPDATE_TYPE) : void;
+  getMimeTypeString() : string | undefined;
+  getProtectionsInitializationData() : IContentProtectionsInitDataObject[];
+  _addProtectionData(initDataType : string, systemId : string, data : Uint8Array) : void;
+}
+
+// Period that is known to be fetched
+export interface IFetchedRepresentation extends IPartialRepresentation {
+  index : IRepresentationIndex;
+  bitrate : number;
+  isFetched() : true;
+}
+
+/**
+ * Normalized Representation structure.
+ * @class Representation
+ */
+class Representation implements IPartialRepresentation {
+  public readonly id : string;
+  public bitrate? : number;
+  public codec? : string;
+  public contentProtections? : IContentProtections;
   public decipherable? : boolean;
+  public frameRate? : string;
+  public height? : number;
+  public index? : IRepresentationIndex;
+  public mimeType? : string;
+  public url? : string;
+  public width? : number;
+
+  private _isFetched : boolean;
 
   /**
    * @param {Object} args
    */
-  constructor(args : IParsedRepresentation) {
+  constructor(args : IParsedRepresentation | IParsedPartialRepresentation) {
     this.id = args.id;
     this.bitrate = args.bitrate;
     this.codec = args.codecs;
+    this.url = args.url;
+    this._isFetched = args.isFetched;
 
     if (args.height != null) {
       this.height = args.height;
@@ -109,11 +147,21 @@ class Representation {
   }
 
   /**
+   * @returns {Boolean}
+   */
+  isFetched() : this is IFetchedRepresentation {
+    return this._isFetched;
+  }
+
+  /**
    * Returns "mime-type string" which includes both the mime-type and the codec,
    * which is often needed when interacting with the browser's APIs.
    * @returns {string}
    */
-  getMimeTypeString() : string {
+  getMimeTypeString() : string | undefined {
+    if (this.mimeType === undefined || this.codec === undefined) {
+      return undefined;
+    }
     return `${this.mimeType};codecs="${this.codec}"`;
   }
 
@@ -140,6 +188,31 @@ class Representation {
                    data: initData });
         return acc;
       }, []);
+  }
+
+  /**
+   * Update current Representation with a new one.
+   * @param {Object} newRepresentation
+   * @param {number} updateType
+   */
+  update(newRepresentation : Representation, updateType : MANIFEST_UPDATE_TYPE) {
+    this._isFetched = newRepresentation._isFetched;
+    this.url = newRepresentation.url;
+    this.bitrate = newRepresentation.bitrate;
+    this.frameRate = newRepresentation.frameRate;
+    this.codec = newRepresentation.codec;
+    this.mimeType = newRepresentation.mimeType;
+    this.width = newRepresentation.width;
+    this.height = newRepresentation.height;
+    this.contentProtections = newRepresentation.contentProtections;
+    this.decipherable = newRepresentation.decipherable;
+    if (!newRepresentation.isFetched() || !this.isFetched()) {
+      this.index = newRepresentation.index;
+    } else if (updateType === MANIFEST_UPDATE_TYPE.Full) {
+      this.index._replace(newRepresentation.index);
+    } else {
+      this.index._update(newRepresentation.index);
+    }
   }
 
   /**

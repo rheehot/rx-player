@@ -15,7 +15,10 @@
  */
 
 import { isCodecSupported } from "../compat";
-import { IParsedRepresentation } from "../parsers/manifest";
+import {
+  IParsedPartialRepresentation,
+  IParsedRepresentation,
+} from "../parsers/manifest";
 
 /**
  * Only keep Representations for which the codec is currently supported.
@@ -25,11 +28,12 @@ import { IParsedRepresentation } from "../parsers/manifest";
  */
 export default function filterSupportedRepresentations(
   adaptationType : string,
-  representations : IParsedRepresentation[]
-) : IParsedRepresentation[] {
+  representations : Array<IParsedRepresentation | IParsedPartialRepresentation>
+) : Array<IParsedRepresentation | IParsedPartialRepresentation> {
   if (adaptationType === "audio" || adaptationType === "video") {
-    return representations
-      .filter((representation) => isCodecSupported(getCodec(representation)));
+    return representations.filter((representation) => {
+      return !representation.isFetched || isCodecSupported(getCodec(representation));
+    });
   }
 
   return representations; // TODO for the other types?

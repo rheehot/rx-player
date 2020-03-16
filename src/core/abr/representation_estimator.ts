@@ -33,6 +33,7 @@ import {
 import log from "../../log";
 import {
   Adaptation,
+  IFetchedRepresentation,
   ISegment,
   Representation,
 } from "../../manifest";
@@ -69,7 +70,7 @@ export interface IRepresentationEstimatorClockTick {
 
 interface IABRMetricValue { duration: number;
                             size: number;
-                            content: { representation: Representation;
+                            content: { representation: IFetchedRepresentation;
                                        adaptation: Adaptation;
                                        segment: ISegment; }; }
 
@@ -111,7 +112,7 @@ export interface IABRFilters { bitrate?: number;
 interface IBufferEventAddedSegment {
   type : "added-segment";
   value : { buffered : TimeRanges;
-            content : { representation : Representation }; };
+            content : { representation : IFetchedRepresentation }; };
 }
 
 // Buffer events needed by the ABRManager

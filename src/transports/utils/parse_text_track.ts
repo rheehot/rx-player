@@ -17,8 +17,8 @@
 import log from "../../log";
 import {
   Adaptation,
+  IFetchedRepresentation,
   ISegment,
-  Representation,
 } from "../../manifest";
 import { getMDAT } from "../../parsers/containers/isobmff";
 import stringFromUTF8 from "../../utils/string_from_utf8";
@@ -43,7 +43,7 @@ export function extractTextTrackFromISOBMFF(chunkBytes : Uint8Array) : string {
  * @returns {string}
  */
 export function getISOBMFFTextTrackFormat(
-  representation : Representation
+  representation : IFetchedRepresentation
 ) : "ttml" | "vtt" {
   const codec = representation.codec;
   if (codec === undefined) {
@@ -66,7 +66,7 @@ export function getISOBMFFTextTrackFormat(
  * @returns {string}
  */
 export function getPlainTextTrackFormat(
-  representation : Representation
+  representation : IFetchedRepresentation
 ) : "ttml" | "sami" | "vtt" | "srt" {
   const { mimeType = "" } = representation;
   switch (representation.mimeType) {
@@ -99,7 +99,7 @@ export function getISOBMFFEmbeddedTextTrackData(
     adaptation,
     representation } : { segment : ISegment;
                          adaptation : Adaptation;
-                         representation : Representation; },
+                         representation : IFetchedRepresentation; },
   chunkBytes : Uint8Array,
   chunkInfos : IChunkTimingInfos | null,
   isChunked : boolean
@@ -150,7 +150,7 @@ export function getPlainTextTrackData(
     adaptation,
     representation } : { segment : ISegment;
                          adaptation : Adaptation;
-                         representation : Representation; },
+                         representation : IFetchedRepresentation; },
   textTrackData : string,
   isChunked : boolean
 ) : ITextTrackSegmentData | null {

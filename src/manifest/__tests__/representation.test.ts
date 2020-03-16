@@ -16,6 +16,8 @@
 
 import Representation from "../representation";
 
+// XXX TODO
+
 const minimalIndex = {
   getInitSegment() { return null; },
   getSegments() { return []; },
@@ -26,6 +28,7 @@ const minimalIndex = {
   isSegmentStillAvailable() : undefined { return ; },
   canBeOutOfSyncError() : true { return true; },
   isFinished() : true { return true; },
+  isFetched() : true { return true; },
   _replace() { /* noop */ },
   _update() { /* noop */ },
   _addSegments() { /* noop */ },
@@ -33,7 +36,7 @@ const minimalIndex = {
 
 describe("Manifest - Representation", () => {
   it("should be able to create Representation with the minimum arguments given", () => {
-    const args = { bitrate: 12, id: "test", index: minimalIndex };
+    const args = { bitrate: 12, id: "test", index: minimalIndex, isFetched: true };
     const representation = new Representation(args);
     expect(representation.id).toBe("test");
     expect(representation.bitrate).toBe(12);
@@ -48,7 +51,11 @@ describe("Manifest - Representation", () => {
   });
 
   it("should be able to add a height attribute", () => {
-    const args = { bitrate: 12, id: "test", height: 57, index: minimalIndex };
+    const args = { bitrate: 12,
+                   id: "test",
+                   height: 57,
+                   index: minimalIndex,
+                   isFetched: true };
     const representation = new Representation(args);
     expect(representation.id).toBe("test");
     expect(representation.bitrate).toBe(12);
@@ -63,7 +70,11 @@ describe("Manifest - Representation", () => {
   });
 
   it("should be able to add a width attribute", () => {
-    const args = { bitrate: 12, id: "test", width: 2, index: minimalIndex };
+    const args = { bitrate: 12,
+                   id: "test",
+                   width: 2,
+                   isFetched: true,
+                   index: minimalIndex };
     const representation = new Representation(args);
     expect(representation.id).toBe("test");
     expect(representation.bitrate).toBe(12);
@@ -78,7 +89,11 @@ describe("Manifest - Representation", () => {
   });
 
   it("should be able to add a codecs attribute", () => {
-    const args = { bitrate: 12, id: "test", codecs: "vp9", index: minimalIndex };
+    const args = { bitrate: 12,
+                   id: "test",
+                   codecs: "vp9",
+                   isFetched: true,
+                   index: minimalIndex };
     const representation = new Representation(args);
     expect(representation.id).toBe("test");
     expect(representation.bitrate).toBe(12);
@@ -93,7 +108,11 @@ describe("Manifest - Representation", () => {
   });
 
   it("should be able to add a mimeType attribute", () => {
-    const args = { bitrate: 12, id: "test", mimeType: "audio/mp4", index: minimalIndex };
+    const args = { bitrate: 12,
+                   id: "test",
+                   mimeType: "audio/mp4",
+                   isFetched: true,
+                   index: minimalIndex };
     const representation = new Representation(args);
     expect(representation.id).toBe("test");
     expect(representation.bitrate).toBe(12);
@@ -112,6 +131,7 @@ describe("Manifest - Representation", () => {
       bitrate: 12,
       id: "test",
       index: minimalIndex,
+      isFetched: true,
       contentProtections: {
         keyIds: [{ keyId: new Uint8Array([45]) }],
         initData: { cenc: [{ systemId: "EDEF", data: new Uint8Array([78]) }] },
@@ -131,7 +151,11 @@ describe("Manifest - Representation", () => {
   });
 
   it("should be able to add a frameRate attribute", () => {
-    const args = { bitrate: 12, id: "test", frameRate: "1/60", index: minimalIndex };
+    const args = { bitrate: 12,
+                   id: "test",
+                   frameRate: "1/60",
+                   index: minimalIndex,
+                   isFetched: true };
     const representation = new Representation(args);
     expect(representation.id).toBe("test");
     expect(representation.bitrate).toBe(12);
@@ -146,24 +170,33 @@ describe("Manifest - Representation", () => {
   });
 
   it("should be able to return an exploitable codecs + mimeType string", () => {
-    const args1 = { bitrate: 12, id: "test", index: minimalIndex };
+    const args1 = { bitrate: 12, id: "test", index: minimalIndex, isFetched: true };
     expect(new Representation(args1).getMimeTypeString())
       .toBe("undefined;codecs=\"undefined\"");
 
-    const args2 = { bitrate: 12, id: "test", mimeType: "foo", index: minimalIndex };
+    const args2 = { bitrate: 12,
+                    id: "test",
+                    mimeType: "foo",
+                    isFetched: true,
+                    index: minimalIndex };
     expect(new Representation(args2).getMimeTypeString())
       .toBe("foo;codecs=\"undefined\"");
 
-    const args3 = { bitrate: 12, id: "test", codecs: "bar", index: minimalIndex };
+    const args3 = { bitrate: 12,
+                    id: "test",
+                    codecs: "bar",
+                    isFetched: true,
+                    index: minimalIndex };
     expect(new Representation(args3).getMimeTypeString())
       .toBe("undefined;codecs=\"bar\"");
 
     const args4 = {
       bitrate: 12,
-      id: "test",
-      mimeType: "foo",
       codecs: "bar",
+      id: "test",
       index: minimalIndex,
+      isFetched: true,
+      mimeType: "foo",
     };
     expect(new Representation(args4).getMimeTypeString())
       .toBe("foo;codecs=\"bar\"");

@@ -26,7 +26,10 @@ import Manifest, {
   ISupplementaryTextTrack,
 } from "./manifest";
 import Period from "./period";
-import Representation from "./representation";
+import Representation, {
+  IFetchedRepresentation,
+  IPartialRepresentation,
+} from "./representation";
 import IRepresentationIndex, {
   IBaseContentInfos,
   IMetaPlaylistPrivateInfos,
@@ -42,7 +45,10 @@ export {
   // classes
   Period,
   Adaptation,
+
   Representation,
+  IFetchedRepresentation,
+  IPartialRepresentation,
 
   // types
   IAdaptationType,

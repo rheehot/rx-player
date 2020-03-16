@@ -190,6 +190,7 @@ export default function parseRepresentations(
     const parsedRepresentation : IParsedRepresentation =
       { bitrate: representationBitrate,
         index: representationIndex,
+        isFetched: true,
         id: representationID };
     // 4-2-5. Add optional attributes
     let codecs : string|undefined;

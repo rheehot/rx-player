@@ -14,51 +14,12 @@
  * limitations under the License.
  */
 
+import { Representation } from "../../manifest";
 import InitializationSegmentCache from "../initialization_segment_cache";
 
-const representation1 = {
-  bitrate: 12,
-  id: "r1",
-  getMimeTypeString() : string { return ""; },
-  index: {
-    getInitSegment() : null { return null; },
-    getSegments() : never { throw new Error("Not implemented"); },
-    shouldRefresh() : boolean { return false; },
-    getFirstPosition() : undefined { return ; },
-    getLastPosition() : undefined { return ; },
-    checkDiscontinuity() : number { return -1; },
-    isSegmentStillAvailable() : undefined { return ; },
-    canBeOutOfSyncError() : true { return true; },
-    isFinished() : true { return true; },
-    _replace() : never { throw new Error("Not implemented"); },
-    _update() : never { throw new Error("Not implemented"); },
-    _addSegments() : never { throw new Error("Not implemented"); },
-  },
-  getProtectionsInitializationData() : [] { return []; },
-  _addProtectionData() : never { throw new Error("Not implemented"); },
-};
-
-const representation2 = {
-  bitrate: 14,
-  id: "r2",
-  getMimeTypeString() : string { return ""; },
-  index: {
-    getInitSegment() : null { return null; },
-    getSegments() : never { throw new Error("Not implemented"); },
-    shouldRefresh() : boolean { return false; },
-    getFirstPosition() : undefined { return ; },
-    getLastPosition() : undefined { return ; },
-    checkDiscontinuity() : number { return -1; },
-    isSegmentStillAvailable() : undefined { return ; },
-    canBeOutOfSyncError() : false { return false; },
-    isFinished() : true { return true; },
-    _replace() : never { throw new Error("Not implemented"); },
-    _update() : never { throw new Error("Not implemented"); },
-    _addSegments() : never { throw new Error("Not implemented"); },
-  },
-  getProtectionsInitializationData() : [] { return []; },
-  _addProtectionData() : never { throw new Error("Not implemented"); },
-};
+// Too much work maintaining those where it is not even needed.
+const representation1 = {} as any as Representation;
+const representation2 = {} as any as Representation;
 
 const initSegment1 = {
   id: "init1",

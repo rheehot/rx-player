@@ -398,12 +398,14 @@ function createSmoothStreamingParser(
       const reprIndex = new RepresentationIndex(repIndex, { aggressiveMode,
                                                             isLive,
                                                             segmentPrivateInfos });
-      const representation : IParsedRepresentation = objectAssign({},
-                                                                  qualityLevel,
-                                                                  { index: reprIndex,
-                                                                    mimeType,
-                                                                    codecs,
-                                                                    id });
+      const representation : IParsedRepresentation =
+        objectAssign({},
+                     qualityLevel,
+                     { index: reprIndex,
+                       mimeType,
+                       codecs,
+                       isFetched: true as const,
+                       id });
       if (keyIDs.length > 0) {
         representation.contentProtections = { keyIds: keyIDs,
                                               initData: {} };
@@ -532,7 +534,8 @@ function createSmoothStreamingParser(
 
       if (firstVideoAdaptation !== undefined) {
         const firstVideoRepresentation = firstVideoAdaptation.representations[0];
-        if (firstVideoRepresentation !== undefined) {
+        if (firstVideoRepresentation !== undefined &&
+            firstVideoRepresentation.isFetched) { // XXX TODO
           const firstVideoTimeReference =
             firstVideoRepresentation.index.getFirstPosition();
           const lastVideoTimeReference =
@@ -550,7 +553,8 @@ function createSmoothStreamingParser(
 
       if (firstAudioAdaptation !== undefined) {
         const firstAudioRepresentation = firstAudioAdaptation.representations[0];
-        if (firstAudioRepresentation !== undefined) {
+        if (firstAudioRepresentation !== undefined &&
+            firstAudioRepresentation.isFetched) { // XXX TODO
           const firstAudioTimeReference =
             firstAudioRepresentation.index.getFirstPosition();
           const lastAudioTimeReference =

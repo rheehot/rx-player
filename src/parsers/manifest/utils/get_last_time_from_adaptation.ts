@@ -34,7 +34,11 @@ export default function getLastPositionFromAdaptation(
   const { representations } = adaptation;
   let min : null | number = null;
   for (let i = 0; i < representations.length; i++) {
-    const lastPosition = representations[i].index.getLastPosition();
+    const representation = representations[i];
+    if (representation.isFetched === false) {
+      return undefined;
+    }
+    const lastPosition = representation.index.getLastPosition();
     if (lastPosition === undefined) { // we cannot tell
       return undefined;
     }

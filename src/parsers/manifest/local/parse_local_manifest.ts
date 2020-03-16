@@ -138,6 +138,7 @@ function parseRepresentation(
 ) : IParsedRepresentation {
   const id = "representation-" + representationIdGenerator();
   return { id,
+           isFetched: true,
            bitrate: representation.bitrate,
            height: representation.height,
            width: representation.width,

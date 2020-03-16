@@ -20,12 +20,12 @@ import {
 } from "rxjs";
 import Manifest, {
   Adaptation,
+  IFetchedRepresentation,
   IRepresentationFilter,
   ISegment,
   ISupplementaryImageTrack,
   ISupplementaryTextTrack,
   Period,
-  Representation,
 } from "../manifest";
 import { IBifThumbnail } from "../parsers/images/bif";
 import { ILocalManifest } from "../parsers/manifest/local";
@@ -72,7 +72,7 @@ export interface ISegmentLoaderArguments {
   manifest : Manifest; // Manifest related to this segment
   period : Period; // Period related to this segment
   adaptation : Adaptation; // Adaptation related to this segment
-  representation : Representation; // Representation related to this segment
+  representation : IFetchedRepresentation; // Representation related to this segment
   segment : ISegment; // Segment we want to load
   url : string | null; // URL at which the segment should be downloaded
 }
@@ -171,7 +171,7 @@ export interface ISegmentParserArguments<T> {
     manifest : Manifest; // Manifest related to this segment
     period : Period; // Period related to this segment
     adaptation : Adaptation; // Adaptation related to this segment
-    representation : Representation; // Representation related to this segment
+    representation : IFetchedRepresentation; // Representation related to this segment
     segment : ISegment; // The segment we want to parse
   };
 }
@@ -399,7 +399,7 @@ export type ITransportFunction = (options : ITransportOptions) =>
 export type CustomSegmentLoader = (
   // first argument: infos on the segment
   args : { adaptation : Adaptation;
-           representation : Representation;
+           representation : IFetchedRepresentation;
            segment : ISegment;
            transport : string;
            url : string;

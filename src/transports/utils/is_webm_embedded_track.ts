@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import { Representation } from "../../manifest";
+import { IFetchedRepresentation } from "../../manifest";
 
 /**
  * @param {Object} representation
  * @returns {boolean}
  */
 export default function isWEBMEmbeddedTrack(
-  representation : Representation
+  representation : IFetchedRepresentation
 ) : boolean {
   return representation.mimeType === "video/webm" ||
          representation.mimeType === "audio/webm";

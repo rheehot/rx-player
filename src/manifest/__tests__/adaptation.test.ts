@@ -19,6 +19,7 @@ import {
 } from "../adaptation";
 import Representation from "../representation";
 
+// XXX TODO
 const minimalRepresentationIndex = {
   getInitSegment() { return null; },
   getSegments() { return []; },
@@ -182,9 +183,18 @@ describe("Manifest - Adaptation", () => {
     }));
 
     const Adaptation = require("../adaptation").default;
-    const rep1 = { bitrate: 10, id: "rep1", index: minimalRepresentationIndex };
-    const rep2 = { bitrate: 30, id: "rep2", index: minimalRepresentationIndex };
-    const rep3 = { bitrate: 20, id: "rep3", index: minimalRepresentationIndex };
+    const rep1 = { bitrate: 10,
+                   id: "rep1",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep2 = { bitrate: 30,
+                   id: "rep2",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep3 = { bitrate: 20,
+                   id: "rep3",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
     const representations = [rep1, rep2, rep3];
     const args = { id: "12", representations, type: "text" as "text" };
 
@@ -221,19 +231,39 @@ describe("Manifest - Adaptation", () => {
     }));
 
     const Adaptation = require("../adaptation").default;
-    const rep1 = { bitrate: 10, id: "rep1", index: minimalRepresentationIndex };
-    const rep2 = { bitrate: 20, id: "rep2", index: minimalRepresentationIndex };
-    const rep3 = { bitrate: 30, id: "rep3", index: minimalRepresentationIndex };
-    const rep4 = { bitrate: 40, id: "rep4", index: minimalRepresentationIndex };
-    const rep5 = { bitrate: 50, id: "rep5", index: minimalRepresentationIndex };
-    const rep6 = { bitrate: 60, id: "rep6", index: minimalRepresentationIndex };
+    const rep1 = { bitrate: 10,
+                   id: "rep1",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep2 = { bitrate: 20,
+                   id: "rep2",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep3 = { bitrate: 30,
+                   id: "rep3",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep4 = { bitrate: 40,
+                   id: "rep4",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep5 = { bitrate: 50,
+                   id: "rep5",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
+    const rep6 = { bitrate: 60,
+                   id: "rep6",
+                   isFetched: true,
+                   index: minimalRepresentationIndex };
     const representations = [rep1, rep2, rep3, rep4, rep5, rep6];
 
     const representationFilter = jest.fn((
       representation : Representation,
       adaptationInfos : IRepresentationInfos
     ) => {
-      if (adaptationInfos.language === "fr" && representation.bitrate < 40) {
+      if (adaptationInfos.language === "fr" &&
+          representation.bitrate !== undefined &&
+          representation.bitrate < 40) {
         return false;
       }
       return true;

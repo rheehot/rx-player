@@ -28,11 +28,35 @@ export interface IContentProtections {
 }
 
 // Representation of a "quality" available in any Adaptation
+// This is the partial version, meaning that not all information about this
+// Representation are available yet. They first have to be fetched from a
+// server
+export interface IParsedPartialRepresentation {
+  // required
+  id : string;
+  isFetched : false;
+
+  // optional
+  bitrate? : number;
+  codecs?: string;
+  contentProtections? : IContentProtections;
+  frameRate?: string;
+  height?: number;
+  index? : IRepresentationIndex;
+  mimeType?: string;
+  url? : string;
+  width?: number;
+}
+
+// Representation of a "quality" available in any Adaptation
+// This is the full version, meaning that all information about this
+// Representation are available.
 export interface IParsedRepresentation {
   // required
   bitrate : number;
-  index : IRepresentationIndex;
   id: string;
+  index : IRepresentationIndex;
+  isFetched : true;
 
   // optional
   codecs?: string;
@@ -40,6 +64,7 @@ export interface IParsedRepresentation {
   frameRate?: string;
   height?: number;
   mimeType?: string;
+  url? : string;
   width?: number;
 }
 
@@ -56,7 +81,10 @@ export type IParsedAdaptations =
 export interface IParsedAdaptation {
   // required
   id: string; // Unique ID for all Adaptation of that Period
-  representations: IParsedRepresentation[]; // Qualities available for that Adaptation
+
+  // Qualities available for that Adaptation
+  representations: Array<IParsedPartialRepresentation |
+                         IParsedRepresentation>;
   type: IParsedAdaptationType;
 
   // optional
