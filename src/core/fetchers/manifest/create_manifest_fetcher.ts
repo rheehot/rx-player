@@ -134,7 +134,7 @@ export interface IManifestFetcherBackoffOptions {
  * });
  * ```
  * @param {Object} pipelines
- * @param {Subject} backoffOptions
+ * @param {Subject} options
  * @returns {Object}
  */
 export default function createManifestFetcher(

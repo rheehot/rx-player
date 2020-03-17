@@ -146,6 +146,8 @@ export interface IPeriodsContextInfos {
     const adaptations = parseAdaptationSets(periodIR.children.adaptations,
                                             periodInfos);
     const parsedPeriod : IParsedPeriod = { id: periodID,
+                                           isLoaded: true,
+                                           url: null,
                                            start: periodStart,
                                            end: periodEnd,
                                            duration: periodDuration,

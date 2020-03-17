@@ -15,37 +15,35 @@
  */
 
 import {
-  combineLatest,
-  Observable,
   of as observableOf,
 } from "rxjs";
 import {
-  filter,
   map,
-  mergeMap,
 } from "rxjs/operators";
 import features from "../../features";
 import Manifest, {
   Adaptation,
   IMetaPlaylistPrivateInfos,
   ISegment,
-  Period,
+  LoadedPeriod,
+  PartialPeriod,
   Representation,
 } from "../../manifest";
 import parseMetaPlaylist, {
-  IParserResponse as IMPLParserResponse,
+  transformManifestToMetaplaylistPeriod,
 } from "../../parsers/manifest/metaplaylist";
-import { IParsedManifest } from "../../parsers/manifest/types";
 import isNullOrUndefined from "../../utils/is_null_or_undefined";
 import objectAssign from "../../utils/object_assign";
 import {
   IAudioVideoParserObservable,
   IChunkTimingInfos,
   IImageParserObservable,
-  ILoaderDataLoaded,
-  ILoaderDataLoadedValue,
   IManifestParserArguments,
   IManifestParserObservable,
+  IPeriodLoaderArguments,
+  IPeriodLoaderObservable,
+  IPeriodParserArguments,
+  IPeriodParserObservable,
   ISegmentLoaderArguments,
   ISegmentParserArguments,
   ISegmentParserParsedSegment,
@@ -64,7 +62,7 @@ function getContent(
   segment : ISegment,
   offset : number
 ) : { manifest : Manifest;
-      period : Period;
+      period : LoadedPeriod;
       adaptation : Adaptation;
       representation : Representation;
       segment : ISegment; }
@@ -173,60 +171,52 @@ export default function(options : ITransportOptions): ITransportPipelines {
   const manifestPipeline = {
     loader: manifestLoader,
     parser(
-      { response,
-        url: loaderURL,
-        previousManifest,
-        scheduleRequest,
-        unsafeMode,
-        externalClockOffset } : IManifestParserArguments
+      { response, url: loaderURL } : IManifestParserArguments
     ) : IManifestParserObservable {
       const url = response.url === undefined ? loaderURL :
                                                response.url;
       const { responseData } = response;
 
-      const parserOptions = {
-        url,
-        serverSyncInfos: options.serverSyncInfos,
-      };
+      const parserOptions = { url,
+                              serverSyncInfos: options.serverSyncInfos };
 
-      return handleParsedResult(parseMetaPlaylist(responseData, parserOptions));
+      const parsedManifest = parseMetaPlaylist(responseData, parserOptions);
+      const manifest = new Manifest(parsedManifest, options);
+      return observableOf({ manifest });
+    },
+  };
 
-      function handleParsedResult(
-        parsedResult : IMPLParserResponse<IParsedManifest>
-      ) : IManifestParserObservable {
-        if (parsedResult.type === "done") {
-          const manifest = new Manifest(parsedResult.value, options);
-          return observableOf({ manifest });
-        }
+  const periodPipeline = {
+    loader({ period } : IPeriodLoaderArguments) : IPeriodLoaderObservable {
+      const url = getURLFromPeriod(period);
+      const pipelines = getTransportPipelinesFromPeriod(period);
+      return pipelines.manifest.loader({ url });
+    },
 
-        const loaders$ : Array<Observable<Manifest>> =
-          parsedResult.value.ressources.map((ressource) => {
-            const transport = getTransportPipelines(transports,
-                                                    ressource.transportType,
-                                                    otherTransportOptions);
-            const request$ = scheduleRequest(() =>
-                transport.manifest.loader({ url : ressource.url }).pipe(
-                  filter((e): e is ILoaderDataLoaded< Document | string > =>
-                    e.type === "data-loaded"
-                  ),
-                  map((e) : ILoaderDataLoadedValue< Document | string > => e.value)
-                ));
+    parser({ externalClockOffset, // XXX TODO
+             period,
+             response,
+             scheduleRequest } : IPeriodParserArguments) : IPeriodParserObservable {
+      const url = getURLFromPeriod(period);
+      const pipelines = getTransportPipelinesFromPeriod(period);
+      return pipelines.manifest.parser({ response,
+                                         url,
+                                         scheduleRequest,
 
-            return request$.pipe(mergeMap((responseValue) => {
-              return transport.manifest.parser({ response: responseValue,
-                                                 url: ressource.url,
-                                                 scheduleRequest,
-                                                 previousManifest,
-                                                 unsafeMode,
-                                                 externalClockOffset })
-                .pipe(map((parserData) : Manifest => parserData.manifest));
-            }));
+                                         // XXX TODO
+                                         previousManifest: null,
+                                         unsafeMode: false,
+
+                                         externalClockOffset })
+        .pipe(map((parserData) => {
+          const transformed =
+            transformManifestToMetaplaylistPeriod(period, parserData.manifest);
+          const periods = transformed.map(parsedPeriod => {
+            return parsedPeriod.isLoaded ? new LoadedPeriod(parsedPeriod) :
+                                           new PartialPeriod(parsedPeriod);
           });
-
-        return combineLatest(loaders$).pipe(mergeMap((loadedRessources) =>
-          handleParsedResult(parsedResult.value.continue(loadedRessources))
-        ));
-      }
+          return { periods  };
+        }));
     },
   };
 
@@ -240,6 +230,33 @@ export default function(options : ITransportOptions): ITransportPipelines {
   ): ITransportPipelines {
     const { transportType } = getMetaPlaylistPrivateInfos(segment);
     return getTransportPipelines(transports, transportType, otherTransportOptions);
+  }
+
+  function getURLFromPeriod(
+    period : LoadedPeriod | PartialPeriod
+  ): string {
+    if (period.url === undefined || period.url === null) {
+      throw new Error("Cannot perform HTTP(s) request. URL not known");
+    }
+    return period.url;
+  }
+
+  function getTransportPipelinesFromPeriod(
+    period : LoadedPeriod | PartialPeriod
+  ): ITransportPipelines {
+    const transportType = getTransportTypeFromPeriod(period);
+    return getTransportPipelines(transports, transportType, otherTransportOptions);
+  }
+
+  function getTransportTypeFromPeriod(
+    period : LoadedPeriod | PartialPeriod
+  ) : string {
+    const mplPrivateInfos = period.privateInfos.metaplaylist;
+    if (mplPrivateInfos === undefined) {
+      throw new Error("A MetaPlaylist Partial Period should have the " +
+                      "corresponding privateInfos");
+    }
+    return mplPrivateInfos.transportType;
   }
 
   /**
@@ -406,6 +423,7 @@ export default function(options : ITransportOptions): ITransportPipelines {
   };
 
   return { manifest: manifestPipeline,
+           period: periodPipeline,
            audio: audioPipeline,
            video: videoPipeline,
            text: textTrackPipeline,
