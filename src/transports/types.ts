@@ -109,6 +109,8 @@ export interface ILoaderProgress { type : "progress";
 export interface ILoaderChunkedData { type : "data-chunk";
                                       value : {
                                         responseData: ArrayBuffer|Uint8Array;
+                                        duration : number|undefined;
+                                        size : number|undefined;
                                       }; }
 
 // Event emitted by loaders when all data has been emitted through chunks

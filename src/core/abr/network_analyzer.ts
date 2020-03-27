@@ -20,6 +20,7 @@ import { Representation } from "../../manifest";
 import arrayFind from "../../utils/array_find";
 import BandwidthEstimator from "./bandwidth_estimator";
 import EWMA from "./ewma";
+import LowLatencyBandwidthCalculator from "./low_latency_bandwidth_estimator";
 import {
   IProgressEventValue,
   IRequestInfo,
@@ -36,6 +37,7 @@ interface INetworkAnalizerClockTick {
   currentTime : number; // current position, in seconds
   speed : number; // current playback rate
   duration : number; // whole duration of the content
+  liveGap? : number; // Gap between the live edge and current position
 }
 
 /**
@@ -231,6 +233,8 @@ export default class NetworkAnalyzer {
   public getBandwidthEstimate(
     clockTick: INetworkAnalizerClockTick,
     bandwidthEstimator : BandwidthEstimator,
+    lowLatencyBandwidthEstimator : LowLatencyBandwidthCalculator,
+    lowLatencyMode: boolean,
     currentRepresentation : Representation | null,
     currentRequests : IRequestInfo[],
     lastEstimatedBitrate: number|undefined
@@ -238,7 +242,7 @@ export default class NetworkAnalyzer {
     let newBitrateCeil; // bitrate ceil for the chosen Representation
     let bandwidthEstimate;
     const localConf = this._config;
-    const { bufferGap, currentTime, duration } = clockTick;
+    const { bufferGap, currentTime, duration, liveGap } = clockTick;
 
     // check if should get in/out of starvation mode
     if (isNaN(duration) ||
@@ -276,14 +280,21 @@ export default class NetworkAnalyzer {
 
     // if newBitrateCeil is not yet defined, do the normal estimation
     if (newBitrateCeil == null) {
+      const lowLatencyBandwidthEstimate = (lowLatencyMode &&
+                                           liveGap !== undefined &&
+                                           liveGap < 5) ?
+        lowLatencyBandwidthEstimator.getBandwidth() : undefined;
+
       bandwidthEstimate = bandwidthEstimator.getEstimate();
 
-      if (bandwidthEstimate != null) {
-        newBitrateCeil = bandwidthEstimate *
-          (this._inStarvationMode ? localConf.starvationBitrateFactor :
-                                    localConf.regularBitrateFactor);
-      } else if (lastEstimatedBitrate != null) {
-        newBitrateCeil = lastEstimatedBitrate *
+      // console.log("!!!", lowLatencyBandwidthEstimate, bandwidthEstimate);
+      const definitiveBandwidthEstimate = lowLatencyBandwidthEstimate !== undefined ?
+        Math.max(lowLatencyBandwidthEstimate,
+                 (bandwidthEstimate ?? lastEstimatedBitrate ?? Infinity)) :
+        (bandwidthEstimate ?? lastEstimatedBitrate);
+
+      if (definitiveBandwidthEstimate != null) {
+        newBitrateCeil = definitiveBandwidthEstimate *
           (this._inStarvationMode ? localConf.starvationBitrateFactor :
                                     localConf.regularBitrateFactor);
       } else {

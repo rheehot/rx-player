@@ -88,6 +88,7 @@ export interface IAdaptationBufferClockTick extends IRepresentationBufferClockTi
   duration : number; // duration of the HTMLMediaElement
   isPaused: boolean; // If true, the player is on pause
   speed : number; // Current regular speed asked by the user
+  liveGap? : number; // Gap between the live edge and current position
 }
 
 export interface IAdaptationBufferArguments<T> {

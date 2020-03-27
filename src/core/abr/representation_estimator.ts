@@ -42,6 +42,7 @@ import BufferBasedChooser from "./buffer_based_chooser";
 import filterByBitrate from "./filter_by_bitrate";
 import filterByWidth from "./filter_by_width";
 import fromBitrateCeil from "./from_bitrate_ceil";
+import LowLatencyBandwidthCalculator from "./low_latency_bandwidth_estimator";
 import NetworkAnalyzer from "./network_analyzer";
 import PendingRequestsStore from "./pending_requests_store";
 import RepresentationScoreCalculator from "./representation_score_calculator";
@@ -65,6 +66,7 @@ export interface IRepresentationEstimatorClockTick {
   currentTime : number; // current position, in seconds
   speed : number; // current playback rate
   duration : number; // whole duration of the content
+  liveGap? : number;
 }
 
 interface IABRMetricValue { duration: number;
@@ -73,7 +75,7 @@ interface IABRMetricValue { duration: number;
                                        adaptation: Adaptation;
                                        segment: ISegment; }; }
 
-export interface IABRMetric { type : "metrics";
+export interface IABRMetric { type : "metrics" | "metrics-chunk";
                               value : IABRMetricValue; }
 
 export interface IABRRepresentationChange { type: "representationChange";
@@ -130,6 +132,7 @@ export interface IRepresentationEstimatorThrottlers {
 
 export interface IRepresentationEstimatorArguments {
   bandwidthEstimator : BandwidthEstimator; // Calculate bandwidth
+  lowLatencyBandwidthCalculator : LowLatencyBandwidthCalculator; //
   bufferEvents$ : Observable<IABRBufferEvents>; // Emit events from the buffer
   clock$ : Observable<IRepresentationEstimatorClockTick>; // current playback situation
   filters$ : Observable<IABRFilters>; // Filter possible choices
@@ -177,6 +180,7 @@ function getFilteredRepresentations(
  */
 export default function RepresentationEstimator({
   bandwidthEstimator,
+  lowLatencyBandwidthCalculator,
   bufferEvents$,
   clock$,
   filters$,
@@ -196,9 +200,13 @@ export default function RepresentationEstimator({
    * Callback to call when new metrics arrive.
    * @param {Object} value
    */
-  function onMetric(value : IABRMetricValue) : void {
+  function onMetric(value : IABRMetricValue, isFromChunk: boolean) : void {
     const { duration, size, content } = value;
 
+    if (isFromChunk) {
+      lowLatencyBandwidthCalculator.addSample(duration, size);
+      return;
+    }
     // calculate bandwidth
     bandwidthEstimator.addSample(duration, size);
 
@@ -215,8 +223,8 @@ export default function RepresentationEstimator({
   }
 
   const metrics$ = bufferEvents$.pipe(
-    filter((e) : e is IABRMetric => e.type === "metrics"),
-    tap(({ value }) => onMetric(value)),
+    filter((e) : e is IABRMetric => e.type === "metrics" || e.type === "metrics-chunk"),
+    tap(({ type, value }) => onMetric(value, type === "metrics-chunk")),
     ignoreElements());
 
   const requests$ = bufferEvents$.pipe(
@@ -311,6 +319,8 @@ export default function RepresentationEstimator({
           const { bandwidthEstimate, bitrateChosen } = networkAnalyzer
             .getBandwidthEstimate(clock,
                                   bandwidthEstimator,
+                                  lowLatencyBandwidthCalculator,
+                                  lowLatencyMode,
                                   currentRepresentation,
                                   requests,
                                   lastEstimatedBitrate);
