@@ -20,6 +20,7 @@ import {
   Observable,
   of as observableOf,
 } from "rxjs";
+import { shareReplay } from "rxjs/operators";
 import {
   ICompatMediaKeySystemAccess,
   ICustomMediaKeys,
@@ -62,8 +63,10 @@ const MediaKeysSetter = {
       let mediaKeysAttachmentQueue$ : Observable<unknown>;
 
       if (isNullOrUndefined(currentState)) {
-        mediaKeysAttachmentQueue$ = setMediaKeys(mediaElement,
-                                                 mediaKeysInfos.mediaKeys);
+        mediaKeysAttachmentQueue$ =
+          setMediaKeys(mediaElement, mediaKeysInfos.mediaKeys).pipe(
+            shareReplay({ refCount: true })
+          );
       } else {
         mediaKeysAttachmentQueue$ = currentState.mediaKeysAttachmentQueue$;
         if (currentState.sessionsStore !== mediaKeysInfos.sessionsStore) {
@@ -72,8 +75,11 @@ const MediaKeysSetter = {
             currentState.sessionsStore.closeAllSessions());
         }
         if (mediaKeysInfos.mediaKeys !== currentState.mediaKeys) {
-          concat(currentState.mediaKeysAttachmentQueue$,
-                 setMediaKeys(mediaElement, mediaKeysInfos.mediaKeys));
+          mediaKeysAttachmentQueue$ =
+            concat(mediaKeysAttachmentQueue$,
+                   setMediaKeys(mediaElement, mediaKeysInfos.mediaKeys).pipe(
+                     shareReplay({ refCount: true })
+                   ));
         }
       }
 
