@@ -46,54 +46,51 @@ function constructTimeline(
   scaledStart : number
 ) : IIndexSegment[] {
   const segments : IIndexSegment[] = [];
-  for (let i = 0; i < timelineElement.childNodes.length; i++) {
-    if (timelineElement.childNodes[i].nodeType === Node.ELEMENT_NODE) {
-      const currentNode = timelineElement.childNodes[i] as Element;
-      if (currentNode.nodeName === "S") {
-        let sStart : number | undefined;
-        let sDuration : number | undefined;
-        let sRepeat : number | undefined;
-        for (let j = 0; j < currentNode.attributes.length; j++) {
-          const attribute = currentNode.attributes[j];
-          switch (attribute.name) {
-            case "t":
-              const start = parseInt(attribute.value, 10);
-              if (isNaN(start)) {
-                log.warn(`DASH: invalid t ("${attribute.value}")`);
-              } else {
-                sStart = start;
-              }
-              break;
-            case "d":
-              const duration = parseInt(attribute.value, 10);
-              if (isNaN(duration)) {
-                log.warn(`DASH: invalid d ("${attribute.value}")`);
-              } else {
-                sDuration = duration;
-              }
-              break;
-            case "r":
-              const repeatCount = parseInt(attribute.value, 10);
-              if (isNaN(repeatCount)) {
-                log.warn(`DASH: invalid r ("${attribute.value}")`);
-              } else {
-                sRepeat = repeatCount;
-              }
-              break;
+  const sElements = timelineElement.getElementsByTagName("S");
+  for (let i = 0; i < sElements.length; i++) {
+    const currentNode = sElements[i];
+    let sStart : number | undefined;
+    let sDuration : number | undefined;
+    let sRepeat : number | undefined;
+    for (let j = 0; j < currentNode.attributes.length; j++) {
+      const attribute = currentNode.attributes[j];
+      switch (attribute.name) {
+        case "t":
+          const start = parseInt(attribute.value, 10);
+          if (isNaN(start)) {
+            log.warn(`DASH: invalid t ("${attribute.value}")`);
+          } else {
+            sStart = start;
           }
-        }
-        const prevItem = segments[segments.length - 1] === undefined ?
-          null :
-          segments[segments.length - 1];
-        const newSeg = fromParsedSToIndexSegment(sStart,
-                                                 sDuration,
-                                                 sRepeat,
-                                                 prevItem,
-                                                 scaledStart);
-        if (newSeg != null) {
-          segments.push(newSeg);
-        }
+          break;
+        case "d":
+          const duration = parseInt(attribute.value, 10);
+          if (isNaN(duration)) {
+            log.warn(`DASH: invalid d ("${attribute.value}")`);
+          } else {
+            sDuration = duration;
+          }
+          break;
+        case "r":
+          const repeatCount = parseInt(attribute.value, 10);
+          if (isNaN(repeatCount)) {
+            log.warn(`DASH: invalid r ("${attribute.value}")`);
+          } else {
+            sRepeat = repeatCount;
+          }
+          break;
       }
+    }
+    const prevItem = segments[segments.length - 1] === undefined ?
+      null :
+      segments[segments.length - 1];
+    const newSeg = fromParsedSToIndexSegment(sStart,
+                                             sDuration,
+                                             sRepeat,
+                                             prevItem,
+                                             scaledStart);
+    if (newSeg != null) {
+      segments.push(newSeg);
     }
   }
   return segments;
