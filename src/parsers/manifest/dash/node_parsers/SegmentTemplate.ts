@@ -19,9 +19,6 @@ import { IParsedInitialization } from "./Initialization";
 import parseSegmentBase, {
   IParsedSegmentBase
 } from "./SegmentBase";
-import createSegmentTimelineParser, {
-  ITimelineParser,
-} from "./SegmentTimeline";
 import {
   parseBoolean,
 } from "./utils";
@@ -46,7 +43,7 @@ export interface IParsedSegmentTemplate extends IParsedSegmentBase {
 
 export interface IParsedSegmentTimeline {
   indexType: "timeline";
-  parseTimeline : ITimelineParser;
+  timeline : Element; // Parsed lazily
   availabilityTimeComplete : boolean;
   indexRangeExact : boolean;
   timescale : number;
@@ -87,13 +84,13 @@ export default function parseSegmentTemplate(
   let availabilityTimeOffset : string|undefined;
   let media : string|undefined;
   let bitstreamSwitching : boolean|undefined;
-  let parseTimeline : ITimelineParser|undefined;
+  let timeline : Element|undefined;
 
   for (let i = 0; i < root.childNodes.length; i++) {
     if (root.childNodes[i].nodeType === Node.ELEMENT_NODE) {
       const currentNode = root.childNodes[i] as Element;
       if (currentNode.nodeName === "SegmentTimeline") {
-        parseTimeline = createSegmentTimelineParser(currentNode);
+        timeline = currentNode;
       }
     }
   }
@@ -104,7 +101,7 @@ export default function parseSegmentTemplate(
     switch (attribute.nodeName) {
 
       case "initialization":
-        if (base.initialization == null) {
+        if (base.initialization === undefined) {
           base.initialization = parseInitializationAttribute(attribute.value);
         }
         break;
@@ -127,15 +124,15 @@ export default function parseSegmentTemplate(
     }
   }
 
-  if (parseTimeline != null) {
+  if (timeline !== undefined) {
     ret = objectAssign({}, base, {
       indexType: "timeline" as "timeline",
-      parseTimeline,
+      timeline,
     });
   } else {
     const segmentDuration = base.duration;
 
-    if (segmentDuration == null) {
+    if (segmentDuration === undefined) {
       throw new Error("Invalid SegmentTemplate: no duration");
     }
     ret = objectAssign({}, base, {
@@ -144,19 +141,19 @@ export default function parseSegmentTemplate(
     });
   }
 
-  if (index != null) {
+  if (index !== undefined) {
     ret.index = index;
   }
 
-  if (media != null) {
+  if (media !== undefined) {
     ret.media = media;
   }
 
-  if (bitstreamSwitching != null) {
+  if (bitstreamSwitching !== undefined) {
     ret.bitstreamSwitching = bitstreamSwitching;
   }
 
-  if (availabilityTimeOffset != null) {
+  if (availabilityTimeOffset !== undefined) {
     ret.availabilityTimeOffset =
       availabilityTimeOffset === "INF" ? Infinity :
                                          parseInt(availabilityTimeOffset, 10);
