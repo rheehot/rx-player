@@ -20,10 +20,10 @@ import {
 } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import { TypedArray } from "../../../core/eme";
-  import {
-    bytesToStr,
-    strToBytes,
-  } from "../../../utils/byte_parsing";
+import {
+  bytesToStr,
+  strToBytes,
+} from "../../../utils/byte_parsing";
 import EventEmitter from "../../../utils/event_emitter";
 import PPromise from "../../../utils/promise";
 import * as events from "../../event_listeners";

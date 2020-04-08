@@ -31,20 +31,17 @@ import { isIE11 } from "../../browser_detection";
 import isNode from "../../is_node";
 import shouldUseWebKitMediaKeys from "../../should_use_webkit_media_keys";
 import CustomMediaKeySystemAccess from "./../custom_key_system_access";
-import getIE11MediaKeysCallbacks from "./ie11_media_keys";
+import getIE11MediaKeysCallbacks, {
+  getMSMediaKeysConstructor
+} from "./ie11_media_keys";
 import getOldKitWebKitMediaKeyCallbacks, {
   isOldWebkitMediaElement
-} from "./oldwebkit_media_keys";
+} from "./old_webkit_media_keys";
 import {
   ICustomMediaKeys,
   ICustomMediaKeySession,
 } from "./types";
 import getWebKitMediaKeysCallbacks from "./webkit_media_keys";
-
-/* tslint:disable no-unsafe-any */
-const { MSMediaKeys,
-        WebKitMediaKeys } = (window as any);
-/* tslint:enable no-unsafe-any */
 
 let isTypeSupported = (keyType: string): boolean => {
   if ((MediaKeys_ as any).isTypeSupported === undefined) {
@@ -87,23 +84,13 @@ if (isNode ||
     isTypeSupported = callbacks.isTypeSupported;
     createCustomMediaKeys = callbacks.createCustomMediaKeys;
   // This is for WebKit with prefixed EME api
-  } else if (shouldUseWebKitMediaKeys() &&
-             /* tslint:disable no-unsafe-any */
-             typeof WebKitMediaKeys.isTypeSupported === "function"
-             /* tslint:enable no-unsafe-any */
-  ) {
+  } else if (shouldUseWebKitMediaKeys()) {
     const callbacks = getWebKitMediaKeysCallbacks();
     /* tslint:disable no-unsafe-any */
     isTypeSupported = callbacks.isTypeSupported;
     /* tslint:enable no-unsafe-any */
     createCustomMediaKeys = callbacks.createCustomMediaKeys;
-  } else if (isIE11 &&
-             MSMediaKeys != null &&
-             /* tslint:disable no-unsafe-any */
-             MSMediaKeys.prototype != null &&
-             typeof MSMediaKeys.isTypeSupported === "function" &&
-             typeof MSMediaKeys?.prototype?.createSession === "function")
-             /* tslint:enable no-unsafe-any */
+  } else if (isIE11 && getMSMediaKeysConstructor() !== null)
     {
       const callbacks = getIE11MediaKeysCallbacks();
       /* tslint:disable no-unsafe-any */

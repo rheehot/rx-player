@@ -30,6 +30,29 @@ import {
 } from "./types";
 import wrapUpdate from "./wrap_update";
 
+interface IMSMediaKeysConstructor {
+  new(keySystem: string): MSMediaKeys;
+  isTypeSupported(keySystem: string, type?: string | null): boolean;
+  isTypeSupportedWithFeatures(keySystem: string, type?: string | null): string;
+}
+
+/**
+ * If supported, returns the native MSMediaKeys from window.
+ * @returns {Object|null}
+ */
+export function getMSMediaKeysConstructor(): IMSMediaKeysConstructor|null {
+  /* tslint:disable no-unsafe-any */
+  const { MSMediaKeys } = (window as any);
+  if (MSMediaKeys === undefined ||
+      MSMediaKeys.prototype === undefined ||
+      MSMediaKeys.isTypeSupported !== "function" ||
+      MSMediaKeys?.prototype?.createSession !== "function") {
+    return null;
+  }
+  /* tslint:enable no-unsafe-any */
+  return MSMediaKeys as IMSMediaKeysConstructor;
+}
+
 class IE11MediaKeySession extends EventEmitter<IMediaKeySessionEvents>
                           implements ICustomMediaKeySession {
   public readonly update: (license: ArrayBuffer,
@@ -101,9 +124,11 @@ class IE11CustomMediaKeys implements ICustomMediaKeys {
   private _mediaKeys?: MSMediaKeys;
 
   constructor(keyType: string) {
-    /* tslint:disable no-unsafe-any */
-    this._mediaKeys = new MSMediaKeys(keyType);
-    /* tslint:enable no-unsafe-any */
+    const MSMediaKeysConstructor = getMSMediaKeysConstructor();
+    if (MSMediaKeysConstructor === null) {
+      throw new Error("No MSMediaKeys API.");
+    }
+    this._mediaKeys = new MSMediaKeysConstructor(keyType);
   }
 
   _setVideo(videoElement: HTMLMediaElement): void {
@@ -128,10 +153,12 @@ class IE11CustomMediaKeys implements ICustomMediaKeys {
 }
 
 export default function getIE11MediaKeysCallbacks() {
-  /* tslint:disable no-unsafe-any */
+  const MSMediaKeysConstructor = getMSMediaKeysConstructor();
+  if (MSMediaKeysConstructor === null) {
+    throw new Error("No MSMediaKeys API.");
+  }
   const isTypeSupported = (keySystem: string, type?: string|null) =>
-    MSMediaKeys.isTypeSupported(keySystem, type);
-  /* tslint:enable no-unsafe-any */
+    MSMediaKeysConstructor.isTypeSupported(keySystem, type);
   const createCustomMediaKeys = (keyType: string) => new IE11CustomMediaKeys(keyType);
   return {
     isTypeSupported,
