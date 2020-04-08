@@ -120,6 +120,7 @@ export default function createMediaSourceLoader({
     initialTime : number,
     autoPlay : boolean
   ) {
+    (window as any).ISPUSHED = false;
     // TODO Update the duration if it evolves?
     const duration = manifest.isLive ? Infinity :
                                        manifest.getMaximumPosition();

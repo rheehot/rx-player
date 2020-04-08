@@ -227,7 +227,7 @@ export default class QueuedSourceBuffer<T> {
     this.bufferType = bufferType;
     this._sourceBuffer = sourceBuffer;
     this._queue = [];
-    this._isLocked = true;
+    this._isLocked = (window as any).ISPUSHED !== true;
     this._pendingTask = null;
     this._lastInitSegment = null;
     this._currentCodec = codec;
@@ -252,6 +252,10 @@ export default class QueuedSourceBuffer<T> {
       tap(() => this._flush()),
       takeUntil(this._destroy$)
     ).subscribe();
+    if ((window as any).SOURCEBUFFERS === undefined) {
+      (window as any).SOURCEBUFFERS = [];
+    }
+    (window as any).SOURCEBUFFERS.push(this);
   }
 
   /**
