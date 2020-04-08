@@ -2,6 +2,17 @@ import MetaPlaylistDASHSmoothURL from "./metaplaylist_url";
 
 export default [
   {
+
+    "name": "Angel One Widevine Multilingual",
+    "url": "https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine/dash.mpd",
+    "transport": "dash",
+    "live": false,
+    "drmInfos": [{
+      "licenseServerUrl": "https://cwip-shaka-proxy.appspot.com/no_auth",
+      "drm": "Widevine",
+    }],
+  },
+  {
     "name": "DASH-IF - SegmentTimeline live stream",
     "url": "https://vm2.dashif.org/livesim-dev/segtimeline_1/testpic_6s/Manifest.mpd",
     "transport": "dash",
