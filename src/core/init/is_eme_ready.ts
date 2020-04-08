@@ -27,7 +27,5 @@ export default function isEMEReadyEvent(
   emeEvent : IEMEManagerEvent | IEMEDisabledEvent
 ) : boolean {
   return emeEvent.type === "eme-disabled" ||
-         emeEvent.type === "attached-media-keys" ||
-         (emeEvent.type === "created-media-keys" &&
-          emeEvent.value.keySystemOptions.disableMediaKeysAttachmentLock === true);
+         emeEvent.type === "session-updated";
 }
