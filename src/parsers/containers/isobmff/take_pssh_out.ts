@@ -44,7 +44,7 @@ export default function takePSSHOut(data : Uint8Array) : IPSSHInfo[] {
   while (i < moov.length) {
     let psshOffsets : [number, number]|null;
     try {
-      psshOffsets = getBoxOffsets(moov, 0x70737368 /* pssh */);
+      psshOffsets = getBoxOffsets(moov, 0x70737368 /* pssh */, i);
     } catch (e) {
       log.warn(e);
       return psshBoxes;
@@ -59,11 +59,6 @@ export default function takePSSHOut(data : Uint8Array) : IPSSHInfo[] {
                        data: pssh });
     }
 
-    // replace by `free` box.
-    moov[psshOffsets[0] + 4] = 0x66;
-    moov[psshOffsets[0] + 5] = 0x72;
-    moov[psshOffsets[0] + 6] = 0x65;
-    moov[psshOffsets[0] + 7] = 0x65;
     i = psshOffsets[1];
   }
   return psshBoxes;
