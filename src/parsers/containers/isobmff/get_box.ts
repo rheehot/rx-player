@@ -55,9 +55,13 @@ function getBox(buf : Uint8Array, boxName : number) : Uint8Array|null {
  * 'moov'), hexa encoded
  * @returns {Array.<number>|null}
  */
-function getBoxOffsets(buf : Uint8Array, boxName : number) : [number, number]|null {
+function getBoxOffsets(
+  buf : Uint8Array,
+  boxName : number,
+  offset? : number
+) : [number, number]|null {
   const l = buf.length;
-  let i = 0;
+  let i = offset ?? 0;
 
   let name : number;
   let size : number = 0;
