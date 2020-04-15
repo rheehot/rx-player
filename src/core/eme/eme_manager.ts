@@ -28,17 +28,15 @@ import {
   ignoreElements,
   map,
   mergeMap,
+  share,
   shareReplay,
   take,
   tap,
 } from "rxjs/operators";
-import {
-  events,
-  generateKeyRequest,
-  getInitData,
-} from "../../compat/";
+import { generateKeyRequest } from "../../compat/";
 import { EncryptedMediaError } from "../../errors";
 import log from "../../log";
+import deferSubscriptions from "../../utils/defer_subscriptions";
 import getSession, {
   IEncryptedEvent,
 } from "./get_session";
@@ -54,8 +52,6 @@ import {
   IKeySystemOption,
 } from "./types";
 import InitDataStore from "./utils/init_data_store";
-
-const { onEncrypted$ } = events;
 
 /**
  * EME abstraction and event handler used to communicate with the Content-
@@ -97,25 +93,10 @@ export default function EMEManager(
     }),
     take(1));
 
-  const mediaEncryptedEvents$ = onEncrypted$(mediaElement).pipe(
-    tap((evt) => {
-      log.debug("EME: Encrypted event received from media element.", evt);
-    }),
-    mergeMap((evt) : Observable<IEncryptedEvent> => {
-      const { initData, initDataType } = getInitData(evt);
-      if (initData == null) {
-        return EMPTY;
-      }
-      return observableOf({ type: initDataType, data: initData });
-    }),
-    shareReplay({ refCount: true })); // multiple Observables listen to that one
-                                      // as soon as the EMEManager is subscribed
-
-  const externalEvents$ = contentProtections$.pipe(
-    tap((evt) => { log.debug("EME: Encrypted event received from Player", evt); }));
-
-  // Merge all encrypted events
-  const encryptedEvents$ = observableMerge(externalEvents$, mediaEncryptedEvents$);
+  const encryptedEvents$ = contentProtections$.pipe(
+    tap((evt) => { log.debug("EME: Encrypted event received from Player", evt); }),
+    deferSubscriptions(),
+    share());
 
   const bindSession$ = encryptedEvents$.pipe(
     // Add attached MediaKeys info once available
@@ -236,7 +217,7 @@ export default function EMEManager(
     }));
 
   return observableMerge(mediaKeysInfos$,
-                         mediaEncryptedEvents$
+                         encryptedEvents$
                            .pipe(map(evt => ({ type: "encrypted-event-received" as const,
                                                value: evt }))),
                          bindSession$);
