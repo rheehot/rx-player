@@ -16,6 +16,8 @@
 
 /**
  * Convert given buffer to a 32bit integer hash
+ * Note: Because it is used in peristent session storage, and as such can leak
+ * into the browser's storage, this algorithm has to be left as is.
  * @param {Array.<number>|TypedArray} buffer
  * @returns {number}
  */
