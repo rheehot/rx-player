@@ -21,8 +21,8 @@ import {
   ICustomMediaKeySystemAccess,
 } from "../../compat";
 import { ICustomError } from "../../errors";
-import SessionsStore from "./utils/open_sessions_store";
-import PersistedSessionsStore from "./utils/persisted_session_store";
+import LoadedSessionsStore from "./utils/open_sessions_store";
+import PersistentSessionsStore from "./utils/persistent_sessions_store";
 
 // Emitted when a minor error happened.
 export interface IEMEWarningEvent { type : "warning";
@@ -158,15 +158,15 @@ export interface IMediaKeysInfos {
   keySystemOptions: IKeySystemOption; // options set by the user
   mediaKeys : MediaKeys |
               ICustomMediaKeys;
-  sessionsStore : SessionsStore;
-  sessionStorage : PersistedSessionsStore|null;
+  loadedSessionsStore : LoadedSessionsStore;
+  persistentSessionsStore : PersistentSessionsStore|null;
 }
 
 // Data stored in a persistent MediaKeySession storage
 // Has to be versioned to be able to play sessions persisted in an old
 // RxPlayer version when in a new one.
-export type IPersistedSessionInfo = IPersistedSessionInfoV1 |
-                                    IPersistedSessionInfoV0;
+export type IPersistentSessionInfo = IPersistentSessionInfoV1 |
+                                     IPersistentSessionInfoV0;
 
 // When created in RxPlayer v3.21.0+.
 // Add sub-par (as in not performant) collision prevention by setting both
@@ -175,7 +175,7 @@ export type IPersistedSessionInfo = IPersistedSessionInfoV1 |
 // Had to do this way because this structure is documented in the API as being
 // put in an array with one element per sessionId.
 // We might implement a HashMap in future versions instead.
-export interface IPersistedSessionInfoV1 { version : 1;
+export interface IPersistentSessionInfoV1 { version : 1;
                                            sessionId : string;
                                            initData : Uint8Array;
                                            initDataHash : number;
@@ -184,7 +184,7 @@ export interface IPersistedSessionInfoV1 { version : 1;
 // When created in versions before the RxPlayer v3.21.0
 // Here no collision detection. We could theorically load the wrong persistent
 // session.
-export interface IPersistedSessionInfoV0 { version? : undefined;
+export interface IPersistentSessionInfoV0 { version? : undefined;
                                            sessionId : string;
                                            // This initData is a hash of a real
                                            // one. Here we don't handle
@@ -193,8 +193,8 @@ export interface IPersistedSessionInfoV0 { version? : undefined;
                                            initDataType? : string | undefined; }
 
 // MediaKeySession storage interface
-export interface IPersistedSessionStorage { load() : IPersistedSessionInfo[];
-                                            save(x : IPersistedSessionInfo[]) : void; }
+export interface IPersistentSessionStorage { load() : IPersistentSessionInfo[];
+                                             save(x : IPersistentSessionInfo[]) : void; }
 
 export type TypedArray = Int8Array |
                          Int16Array |
@@ -220,7 +220,7 @@ export interface IKeySystemOption {
                         timeout? : number; };
   serverCertificate? : ArrayBuffer | TypedArray;
   persistentLicense? : boolean;
-  licenseStorage? : IPersistedSessionStorage;
+  licenseStorage? : IPersistentSessionStorage;
   persistentStateRequired? : boolean;
   distinctiveIdentifierRequired? : boolean;
   closeSessionsOnStop? : boolean;

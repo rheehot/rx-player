@@ -17,6 +17,7 @@
 import {
   concat as observableConcat,
   defer as observableDefer,
+  EMPTY,
   merge as observableMerge,
   Observable,
   of as observableOf,
@@ -89,8 +90,8 @@ export default function getSession(
 
     // possible previous loaded session with the same initialization data
     let previousLoadedSession : MediaKeySession|ICustomMediaKeySession|null = null;
-    const { sessionsStore } = mediaKeysInfos;
-    const entry = sessionsStore.get(initData, initDataType);
+    const { loadedSessionsStore } = mediaKeysInfos;
+    const entry = loadedSessionsStore.get(initData, initDataType);
     if (entry != null) {
       previousLoadedSession = entry.session;
       if (isSessionUsable(previousLoadedSession)) {
@@ -100,24 +101,28 @@ export default function getSession(
                                        sessionType: entry.sessionType,
                                        initData,
                                        initDataType } });
-      } else if (mediaKeysInfos.sessionStorage != null) {
-        mediaKeysInfos.sessionStorage.delete(new Uint8Array(initData), initDataType);
+      } else if (mediaKeysInfos.persistentSessionsStore != null) {
+        mediaKeysInfos.persistentSessionsStore
+          .delete(new Uint8Array(initData), initDataType);
       }
     }
 
     return (previousLoadedSession != null ?
-      sessionsStore.deleteAndCloseSession(previousLoadedSession) :
+      loadedSessionsStore.closeSession(initData, initDataType) :
       observableOf(null)
     ).pipe(mergeMap(() => {
-      const cleaningOldSessions$ : Array<Observable<unknown>> = [];
-      const entries = sessionsStore.getAll().slice();
-      if (MAX_SESSIONS > 0 && MAX_SESSIONS <= entries.length) {
-        for (let i = 0; i < (MAX_SESSIONS - entries.length + 1); i++) {
-          cleaningOldSessions$.push(
-            sessionsStore.deleteAndCloseSession(entries[i].session)
-          );
-        }
-      }
+      const cleaningOldSessions$ = MAX_SESSIONS > 0 ?
+        loadedSessionsStore.cleanOldSessions(MAX_SESSIONS) :
+        EMPTY;
+      // if (MAX_SESSIONS > 0 && MAX_SESSIONS <= entriesToClose.length) {
+      //   for (let i = 0; i < (MAX_SESSIONS - entriesToClose.length + 1); i++) {
+      //     const entryToClose = entriesToClose[i];
+      //     cleaningOldSessions$.push(
+      //       loadedSessionsStore.closeSession(entryToClose.initData,
+      //                                                 entryToClose.initDataType)
+      //     );
+      //   }
+      // }
 
       return observableConcat(
         observableMerge(...cleaningOldSessions$).pipe(ignoreElements()),

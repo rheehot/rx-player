@@ -103,7 +103,7 @@ export default function EMEManager(
     }),
     mergeMap((evt) : Observable<IEncryptedEvent> => {
       const { initData, initDataType } = getInitData(evt);
-      if (initData == null) {
+      if (initData === null) {
         return EMPTY;
       }
       return observableOf({ type: initDataType, data: initData });
@@ -133,7 +133,7 @@ export default function EMEManager(
 
       const blacklistError = blacklistedInitData.get(initDataType, initData);
       if (blacklistError != null) {
-        if (initDataType == null) {
+        if (initDataType === undefined) {
           log.error("EME: The current session has already been blacklisted " +
                     "but the current content is not known. Throwing.");
           const { sessionError } = blacklistError;
@@ -162,7 +162,7 @@ export default function EMEManager(
                    mediaKeySession: evt.value.mediaKeySession,
                    sessionType: evt.value.sessionType,
                    keySystemOptions: mediaKeysInfos.keySystemOptions,
-                   sessionStorage: mediaKeysInfos.sessionStorage },
+                   persistentSessionsStore: mediaKeysInfos.persistentSessionsStore },
         })));
 
       if (i === 0) { // first encrypted event for the current content
@@ -190,14 +190,16 @@ export default function EMEManager(
               mediaKeySession,
               sessionType,
               keySystemOptions,
-              sessionStorage } = sessionInfosEvt.value;
+              persistentSessionsStore } = sessionInfosEvt.value;
 
       const generateRequest$ = sessionInfosEvt.type !== "created-session" ?
           EMPTY :
           generateKeyRequest(mediaKeySession, initData, initDataType).pipe(
             tap(() => {
-              if (sessionType === "persistent-license" && sessionStorage != null) {
-                sessionStorage.add(initData, initDataType, mediaKeySession);
+              if (sessionType === "persistent-license" &&
+                  persistentSessionsStore !== null)
+              {
+                persistentSessionsStore.add(initData, initDataType, mediaKeySession);
               }
             }),
             catchError((error: unknown) => {
@@ -219,7 +221,7 @@ export default function EMEManager(
           blacklistedInitData.set(initDataType, initData, err);
 
           const { sessionError } = err;
-          if (initDataType == null) {
+          if (initDataType === undefined) {
             log.error("EME: Current session blacklisted and content not known. " +
                       "Throwing.");
             sessionError.fatal = true;

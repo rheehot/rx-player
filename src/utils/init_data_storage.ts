@@ -146,6 +146,20 @@ export default class InitDataStorage<T> {
     return Object.keys(this._map).length === 0;
   }
 
+  public getEntries() : Array<[Uint8Array, T]> {
+    return Object.keys(this._map).reduce<Array<[Uint8Array, T]>>((acc, key) => {
+      const oldVal = this._map[key];
+      if (oldVal === undefined) {
+        return acc;
+      }
+
+      for (let i = 0; i < oldVal.length; i++) {
+        acc.push(oldVal[i].slice() as [Uint8Array, T]);
+      }
+      return acc;
+    }, []);
+  }
+
   /**
    * Returns copy of underlying InitDataStorage HashMap.
    * It is possible to re-initialize a new InitDataStorage by constructing a
