@@ -20,7 +20,6 @@ import {
   le4toi,
   strToUTF16Array,
 } from "../../utils/byte_parsing";
-import startsWith from "../../utils/starts_with";
 
 /**
  * Create formatted fairplay initdata for WebKit createSession.
@@ -45,8 +44,7 @@ export default function getWebKitFairPlayInitData(
     throw new Error("Unsupported WebKit initData.");
   }
   const initDataUri = bytesToUTF16Str(initData);
-  const contentIdStr = startsWith(initDataUri, "skd://") ? initDataUri.substring(6) :
-                                                           initDataUri;
+  const contentIdStr = initDataUri.split("skd://")[1];
   const id = strToUTF16Array(contentIdStr);
 
   let offset = 0;
