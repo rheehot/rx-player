@@ -93,6 +93,7 @@ export interface IAdaptationSetAttributes {
   minWidth? : number;
   par? : string;
   profiles? : string;
+  selectionPriority? : number;
   segmentAlignment? : number|boolean;
   segmentProfiles? : string;
   subsegmentAlignment? : number|boolean;
@@ -296,6 +297,16 @@ function parseAdaptationSetAttributes(
 
       case "maxFrameRate":
         parsedAdaptation.maxFrameRate = attribute.value;
+        break;
+
+      case "selectionPriority": {
+        const priority = parseInt(attribute.value, 10);
+        if (isNaN(priority)) {
+          log.warn(`DASH: invalid selectionPriority ("${attribute.value}")`);
+        } else {
+          parsedAdaptation.selectionPriority = priority;
+        }
+      }
         break;
 
       case "segmentAlignment": {
