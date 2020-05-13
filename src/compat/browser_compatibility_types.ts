@@ -41,10 +41,11 @@ interface ICompatVTTCue { align : string;
                           startTime : number;
                           vertical : string; }
 
-// surcharge TextTrack to allow adding ICompatVTTCue to it
 interface ICompatTextTrack extends TextTrack {
   addCue(cue: TextTrackCue|ICompatVTTCue) : void;
   removeCue(cue: TextTrackCue|ICompatVTTCue) : void;
+  HIDDEN? : "hidden";
+  SHOWING? :  "showing";
 }
 
 // Document with added optional functions for old browsers
