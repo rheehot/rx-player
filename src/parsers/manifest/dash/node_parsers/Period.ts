@@ -87,7 +87,7 @@ function parsePeriodChildren(periodChildren : NodeList) : IPeriodChildren {
     }
   }
 
-  return { baseURLs, adaptations };
+  return { baseURLs, adaptations, streamEvents };
 }
 
 /**
